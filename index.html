@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบบันทึกใบกำกับสินค้าและสต๊อกผ้า | Fabric Invoice &amp; Stock Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#122437;
+    --navy-2:#1B3A56;
+    --paper:#F6F4EC;
+    --card:#FFFFFF;
+    --line: #E4DFD0;
+    --teal:#0F6E56;
+    --teal-light:#E1F0EB;
+    --amber:#B4740E;
+    --amber-light:#FBEEDA;
+    --coral:#B84A3C;
+    --coral-light:#FBEAE7;
+    --purple:#5B4B9E;
+    --purple-light:#ECE9F7;
+    --ink:#1E2430;
+    --ink-soft:#6A7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter','Noto Sans Thai',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:'Space Grotesk','Noto Sans Thai',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header.topbar{
+    background:var(--navy);
+    color:#EDEFE8;
+    padding:22px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:4px solid var(--teal);
+  }
+  header.topbar .brand{display:flex;align-items:center;gap:14px;}
+  header.topbar .brand .mark{
+    width:38px;height:38px;border-radius:8px;
+    background:var(--teal);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk';font-weight:700;font-size:15px;color:#fff;
+    flex-shrink:0;
+  }
+  header.topbar h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px;}
+  header.topbar p{margin:2px 0 0;font-size:12.5px;color:#AEB9C4;}
+  header.topbar .clock{font-size:12px;color:#9DAAB6;text-align:right;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 32px 60px;}
+
+  .summary-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:26px;
+  }
+  .stat-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .stat-card .tag{
+    font-size:11px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--ink-soft);font-weight:600;
+  }
+  .stat-card .val{
+    font-family:'Space Grotesk';font-size:24px;font-weight:600;margin-top:6px;
+  }
+  .stat-card .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .stat-card.warn .val{color:var(--amber);}
+  .stat-card.bad .val{color:var(--coral);}
+
+  .tabbar{
+    display:flex;
+    gap:0;
+    margin-bottom:0;
+    position:relative;
+    z-index:1;
+  }
+  .tabbtn{
+    font-family:'Space Grotesk';
+    font-size:14.5px;
+    font-weight:600;
+    padding:12px 26px;
+    background:#EAE6D8;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:10px 10px 0 0;
+    cursor:pointer;
+    margin-right:4px;
+    transition:all .15s ease;
+    display:flex;align-items:center;gap:8px;
+  }
+  .tabbtn:hover{background:#F1EEE1;}
+  .tabbtn.active{
+    background:var(--card);
+    color:var(--navy);
+    border-color:var(--line);
+    box-shadow:0 -2px 0 var(--teal) inset;
+  }
+  .tabbtn .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);}
+  .tabbtn:not(.active) .dot{opacity:.35;}
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:0 10px 10px 10px;
+    padding:26px;
+  }
+
+  h2.section-title{
+    font-family:'Space Grotesk';font-size:16px;font-weight:600;margin:0 0 4px;color:var(--navy);
+  }
+  p.section-sub{font-size:13px;color:var(--ink-soft);margin:0 0 20px;}
+  h3.sub-title{font-family:'Space Grotesk';font-size:13.5px;font-weight:600;margin:20px 0 10px;color:var(--navy);}
+
+  .header-mini-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    max-width:560px;
+  }
+  .form-grid{
+    display:grid;
+    gap:12px;
+  }
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}
+  .field input, .field select{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:'Inter','Noto Sans Thai',sans-serif;
+    background:#FDFCF9;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{
+    outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);
+  }
+  .field input[readonly]{
+    background:var(--teal-light);color:var(--teal);font-weight:700;font-family:'IBM Plex Mono';border-color:var(--teal-light);
+  }
+
+  .yards-block{
+    border:1px dashed var(--line);
+    border-radius:9px;
+    padding:14px 16px;
+    margin-top:14px;
+    background:#FDFCF9;
+  }
+  .yards-block .yards-label{
+    font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;
+    display:block;margin-bottom:10px;
+  }
+  .yard-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .yard-row .yard-index{font-size:12.5px;color:var(--ink-soft);width:80px;flex-shrink:0;}
+  .yard-row .yard-input{
+    flex:1;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+    font-size:13.5px;font-family:'IBM Plex Mono';background:#fff;color:var(--ink);
+  }
+  .yard-row .yard-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);}
+  .yard-row .yard-unit{font-size:12.5px;color:var(--ink-soft);width:32px;}
+  .yard-remove{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--coral-light);
+    background:transparent;color:var(--coral);cursor:pointer;font-size:13px;flex-shrink:0;
+  }
+  .yard-remove:hover{background:var(--coral-light);}
+
+  .btn{
+    font-family:'Space Grotesk';
+    font-weight:600;
+    font-size:13.5px;
+    padding:10px 20px;
+    border-radius:7px;
+    border:1px solid var(--teal);
+    background:var(--teal);
+    color:#fff;
+    cursor:pointer;
+    transition:opacity .12s ease;
+  }
+  .btn:hover{opacity:.9;}
+  .btn.secondary{
+    background:transparent;color:var(--navy);border-color:var(--line);
+  }
+  .btn.secondary:hover{background:#F4F2E9;}
+  .btn.danger{
+    background:transparent;color:var(--coral);border-color:var(--coral-light);
+    padding:6px 10px;font-size:12px;
+  }
+  .btn.danger:hover{background:var(--coral-light);}
+  .btn-add-roll{padding:7px 14px;font-size:12.5px;}
+
+  table{width:100%;border-collapse:collapse;margin-top:18px;}
+  thead th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;
+    color:var(--ink-soft);font-weight:600;padding:8px 10px;border-bottom:2px solid var(--line);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:11px 10px;font-size:13.5px;border-bottom:1px solid var(--line);vertical-align:middle;
+  }
+  tbody tr:hover{background:#FBFAF5;}
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px;
+    white-space:nowrap;
+  }
+  .badge.fab-milton{background:var(--teal-light);color:var(--teal);}
+  .badge.fab-cotton{background:var(--amber-light);color:var(--amber);}
+  .badge.fab-silk{background:var(--purple-light);color:var(--purple);}
+  .badge.fab-other{background:#EEECE3;color:var(--ink-soft);}
+  .badge.ok{background:var(--teal-light);color:var(--teal);}
+  .badge.low{background:var(--amber-light);color:var(--amber);}
+  .badge.out{background:var(--coral-light);color:var(--coral);}
+
+  .empty{
+    text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13.5px;
+  }
+  .empty .big{font-family:'Space Grotesk';font-size:15px;color:var(--navy);margin-bottom:4px;font-weight:600;}
+
+  .num{font-family:'IBM Plex Mono';}
+  .right{text-align:right;}
+
+  .filter-bar{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr 1fr auto;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .filter-bar input, .filter-bar select{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 10px;
+    font-size:13px;
+    font-family:'Inter','Noto Sans Thai',sans-serif;
+    background:#FDFCF9;
+    color:var(--ink);
+  }
+  .filter-bar input:focus, .filter-bar select:focus{
+    outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);
+  }
+
+  .doc-grid{
+    display:flex;flex-direction:column;
+    border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  }
+  .doc-card{
+    border-bottom:1px solid var(--line);
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    cursor:pointer;
+    transition:background .12s ease;
+    background:#FDFCF9;
+  }
+  .doc-card:last-child{border-bottom:none;}
+  .doc-card:hover{background:var(--teal-light);}
+
+  .file-icon{width:30px;height:36px;flex-shrink:0;position:relative;}
+  .file-icon .body{
+    position:absolute;inset:0;
+    clip-path:polygon(0 0, 68% 0, 100% 30%, 100% 100%, 0 100%);
+    border-radius:2px;
+  }
+  .file-icon .fold{
+    position:absolute;top:0;right:0;width:0;height:0;
+    border-style:solid;border-width:0 10px 10px 0;
+  }
+  .file-icon .line{position:absolute;left:6px;right:8px;height:2px;border-radius:1px;}
+  .file-icon .line1{top:16px;}
+  .file-icon .line2{top:22px;right:12px;}
+  .file-icon.fab-milton .body{background:var(--teal-light);border:1px solid #9FE1CB;}
+  .file-icon.fab-milton .fold{border-color:transparent #9FE1CB transparent transparent;}
+  .file-icon.fab-milton .line{background:#5DCAA5;}
+  .file-icon.fab-cotton .body{background:var(--amber-light);border:1px solid #F0C98A;}
+  .file-icon.fab-cotton .fold{border-color:transparent #F0C98A transparent transparent;}
+  .file-icon.fab-cotton .line{background:#D9A54B;}
+  .file-icon.fab-silk .body{background:var(--purple-light);border:1px solid #C6BEE8;}
+  .file-icon.fab-silk .fold{border-color:transparent #C6BEE8 transparent transparent;}
+  .file-icon.fab-silk .line{background:#8A7BC8;}
+  .file-icon.fab-other .body{background:#EEECE3;border:1px solid #D8D5C8;}
+  .file-icon.fab-other .fold{border-color:transparent #D8D5C8 transparent transparent;}
+  .file-icon.fab-other .line{background:#A9A79C;}
+
+  .doc-card .doc-main{flex:1;min-width:0;}
+  .doc-card .doc-title{
+    font-family:'IBM Plex Mono';font-weight:600;font-size:14px;color:var(--navy);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .doc-card .doc-sub{
+    font-size:12px;color:var(--ink-soft);margin-top:3px;
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .doc-card .doc-right{text-align:right;flex-shrink:0;}
+  .doc-card .doc-total{font-family:'IBM Plex Mono';font-weight:600;font-size:13.5px;}
+  .doc-card .doc-attach{font-size:11px;color:var(--teal);margin-top:3px;display:flex;align-items:center;gap:4px;justify-content:flex-end;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(18,36,55,.45);
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:40px 20px;z-index:50;overflow-y:auto;
+  }
+  .modal-box{
+    background:#fff;border-radius:12px;max-width:560px;width:100%;
+    padding:28px 30px;position:relative;
+  }
+  .modal-box .modal-close{
+    position:absolute;top:16px;right:16px;background:none;border:none;
+    font-size:18px;color:var(--ink-soft);cursor:pointer;line-height:1;
+  }
+  .modal-box h3{font-family:'Space Grotesk';font-size:17px;margin:0 0 2px;color:var(--navy);}
+  .modal-box .modal-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  .modal-field .k{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);font-weight:600;margin-bottom:3px;}
+  .modal-field .v{font-size:14px;color:var(--ink);}
+  .modal-field.full{grid-column:1 / -1;}
+  .modal-total{
+    border-top:1px solid var(--line);padding-top:14px;margin-top:4px;
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .modal-total .k{font-size:13px;color:var(--ink-soft);}
+  .modal-total .v{font-family:'IBM Plex Mono';font-size:20px;font-weight:700;color:var(--navy);}
+  .modal-actions{display:flex;gap:8px;margin-top:20px;}
+  .roll-chip{
+    display:inline-flex;align-items:center;gap:4px;
+    background:var(--teal-light);color:var(--teal);
+    font-family:'IBM Plex Mono';font-size:12px;font-weight:600;
+    padding:3px 9px;border-radius:6px;margin:0 6px 6px 0;
+  }
+
+  .stock-add-section{margin-top:30px;padding-top:22px;border-top:1px solid var(--line);}
+  .stock-row-header{
+    display:flex;align-items:center;gap:10px;padding:0 0 8px;
+    font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);font-weight:600;
+  }
+  .stock-row-header .h-color{width:140px;flex-shrink:0;}
+  .stock-row-header .h-yds{flex:1;}
+  .stock-row-header .h-total{width:90px;flex-shrink:0;text-align:right;}
+  .stock-row{
+    display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);
+  }
+  .stock-row:last-of-type{border-bottom:none;}
+  .stock-color-input{
+    width:140px;flex-shrink:0;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+    font-size:13.5px;font-family:'Inter','Noto Sans Thai',sans-serif;background:#FDFCF9;color:var(--ink);
+  }
+  .stock-color-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);}
+  .stock-yds-list{display:flex;flex-wrap:wrap;gap:8px;flex:1;}
+  .stock-yds-col{display:flex;align-items:center;gap:4px;}
+  .stock-yds-input{
+    width:88px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+    font-size:13px;font-family:'IBM Plex Mono';background:#fff;color:var(--ink);
+  }
+  .stock-yds-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);}
+  .stock-col-remove{
+    width:20px;height:20px;border-radius:5px;border:1px solid var(--coral-light);background:transparent;
+    color:var(--coral);cursor:pointer;font-size:10px;flex-shrink:0;line-height:1;
+  }
+  .stock-col-remove:hover{background:var(--coral-light);}
+  .btn-add-col{
+    padding:7px 12px;font-size:12px;flex-shrink:0;
+    font-family:'Space Grotesk';font-weight:600;border-radius:7px;border:1px dashed var(--line);
+    background:transparent;color:var(--ink-soft);cursor:pointer;
+  }
+  .btn-add-col:hover{border-color:var(--teal);color:var(--teal);}
+  .stock-row-total{
+    width:90px;flex-shrink:0;text-align:right;font-weight:700;font-size:14px;color:var(--navy);
+  }
+  .stock-row-remove{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--coral-light);
+    background:transparent;color:var(--coral);cursor:pointer;font-size:13px;flex-shrink:0;
+  }
+  .stock-row-remove:hover{background:var(--coral-light);}
+  .grand-total-box{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-top:16px;padding-top:14px;border-top:2px solid var(--line);
+  }
+  .grand-total-box .label{font-family:'Space Grotesk';font-size:13.5px;color:var(--ink-soft);font-weight:600;}
+  .grand-total-box .value{font-family:'IBM Plex Mono';font-size:22px;font-weight:700;color:var(--navy);}
+
+  @media (max-width:900px){
+    .summary-grid{grid-template-columns:repeat(2,1fr);}
+    .header-mini-grid{grid-template-columns:1fr;max-width:none;}
+    .filter-bar{grid-template-columns:1fr 1fr;}
+    .wrap{padding:20px 16px 40px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">IE</div>
+    <div>
+      <h1>ระบบบันทึกใบกำกับสินค้าผ้า &amp; สต๊อก</h1>
+      <p>Fabric Invoice &amp; Stock Log</p>
+    </div>
+  </div>
+  <div class="clock" id="clockBox">—</div>
+</header>
+
+<div class="wrap">
+
+  <div class="summary-grid" id="summaryGrid"></div>
+
+  <div class="tabbar">
+    <button class="tabbtn active" id="tabBtnInvoice" onclick="switchTab('invoice')">
+      <span class="dot"></span> Invoice
+    </button>
+    <button class="tabbtn" id="tabBtnStock" onclick="switchTab('stock')">
+      <span class="dot"></span> Stock
+    </button>
+    <button class="tabbtn" id="tabBtnDocuments" onclick="switchTab('documents')">
+      <span class="dot"></span> Documents
+    </button>
+  </div>
+
+  <div class="panel" id="panelInvoice">
+    <h2 class="section-title">บันทึกใบกำกับสินค้าใหม่</h2>
+    <p class="section-sub">กรอกข้อมูลการสั่งซื้อผ้า — สต๊อกในแท็บ Stock จะอัปเดตทันทีเมื่อบันทึก</p>
+
+    <div class="header-mini-grid">
+      <div class="field">
+        <label>เลขที่ใบกำกับ</label>
+        <input type="text" id="inInvoiceNo" placeholder="INV-0001">
+      </div>
+      <div class="field">
+        <label>วันที่</label>
+        <input type="date" id="inDate">
+      </div>
+      <div class="field">
+        <label>ประเภทผ้า</label>
+        <select id="inFabricType">
+          <option value="MILTON">MILTON</option>
+          <option value="Cotton Linen">Cotton Linen</option>
+          <option value="Thai silk">Thai silk</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>นามลูกค้า</label>
+        <input type="text" id="inCustomer" placeholder="ชื่อลูกค้า">
+      </div>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns:repeat(3,1fr);margin-top:14px;">
+      <div class="field">
+        <label>สี (COL #)</label>
+        <input type="text" id="inColor" placeholder="เช่น COL 12">
+      </div>
+      <div class="field">
+        <label>ราคาต่อหน่วย (บาท/หลา)</label>
+        <input type="number" id="inPrice" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>จำนวน (หลารวม) *</label>
+        <input type="text" id="inQtyDisplay" readonly value="0">
+      </div>
+    </div>
+
+    <div class="yards-block">
+      <label class="yards-label">หลา (Yards)</label>
+      <div id="yardsRows"></div>
+      <button type="button" class="btn secondary btn-add-roll" onclick="addYardRow()">+ เพิ่มม้วน</button>
+    </div>
+
+    <div class="form-grid" style="grid-template-columns:2fr 1fr;margin-top:14px;align-items:end;">
+      <div class="field">
+        <label>แนบเอกสาร (ถ้ามี)</label>
+        <input type="file" id="inFile">
+      </div>
+      <div class="field">
+        <button class="btn" onclick="addInvoice()">+ บันทึกใบกำกับ</button>
+      </div>
+    </div>
+    <div id="formError" style="color:var(--coral);font-size:12.5px;display:none;margin-top:8px;"></div>
+
+    <h3 class="sub-title">รายการที่บันทึกแล้ว</h3>
+    <div style="overflow-x:auto;">
+    <table id="invoiceTable">
+      <thead>
+        <tr>
+          <th>เลขที่</th><th>วันที่</th><th>ประเภทผ้า</th><th>สี (COL #)</th><th>นามลูกค้า</th>
+          <th class="right">หลารวม</th><th class="right">บาท/หลา</th><th class="right">รวม</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="invoiceTbody"></tbody>
+    </table>
+    </div>
+    <div id="invoiceEmpty" class="empty" style="display:none;">
+      <div class="big">ยังไม่มีรายการใบกำกับ</div>
+      กรอกฟอร์มด้านบนเพื่อเริ่มบันทึกรายการแรก
+    </div>
+  </div>
+
+  <div class="panel" id="panelStock" style="display:none;">
+    <h2 class="section-title">สต๊อกผ้า (Real-time)</h2>
+    <p class="section-sub">คำนวณอัตโนมัติจากรายการใบกำกับทั้งหมด แยกตามประเภทผ้าและสี</p>
+
+    <div style="overflow-x:auto;">
+    <table id="stockTable">
+      <thead>
+        <tr>
+          <th>ประเภทผ้า</th>
+          <th>สี (COL #)</th>
+          <th class="right">หลาสะสม</th>
+          <th class="right">จำนวนใบกำกับ</th>
+          <th>สถานะ</th>
+          <th>อัปเดตล่าสุด</th>
+        </tr>
+      </thead>
+      <tbody id="stockTbody"></tbody>
+    </table>
+    </div>
+    <div id="stockEmpty" class="empty" style="display:none;">
+      <div class="big">ยังไม่มีข้อมูลสต๊อก</div>
+      สต๊อกจะปรากฏที่นี่ทันทีหลังบันทึกใบกำกับในแท็บ Invoice
+    </div>
+
+    <div class="stock-add-section">
+      <h3 class="sub-title" style="margin-top:0;">เพิ่มสต๊อกด้วยตนเอง</h3>
+      <p class="section-sub" style="margin-top:-6px;">เพิ่มสี (COLOR #) เป็นแถวใหม่ และเพิ่มหลา (YDS) เป็นคอลัมน์ในแต่ละแถว ระบบรวมยอดให้อัตโนมัติ</p>
+
+      <div class="stock-row-header">
+        <div class="h-color">สี (COLOR #)</div>
+        <div class="h-yds">หลา (YDS)</div>
+        <div class="h-total">TOTAL</div>
+        <div style="width:26px;"></div>
+      </div>
+      <div id="manualStockRows"></div>
+      <button type="button" class="btn secondary" style="margin-top:12px;" onclick="addStockRow()">+ เพิ่มสี (Add row)</button>
+
+      <div class="grand-total-box">
+        <span class="label">รวมหลาทั้งหมด (TOTAL)</span>
+        <span class="value num" id="grandTotalYds">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panelDocuments" style="display:none;">
+    <h2 class="section-title">คลังเอกสารย้อนหลัง</h2>
+    <p class="section-sub">ค้นหาและเรียกดูใบกำกับที่บันทึกไว้ทั้งหมด</p>
+
+    <div class="filter-bar">
+      <input type="text" id="docSearch" placeholder="ค้นหาเลขที่ใบกำกับ, สี, ลูกค้า..." oninput="renderDocuments()">
+      <select id="docTypeFilter" onchange="renderDocuments()">
+        <option value="">ทุกประเภทผ้า</option>
+        <option value="MILTON">MILTON</option>
+        <option value="Cotton Linen">Cotton Linen</option>
+        <option value="Thai silk">Thai silk</option>
+      </select>
+      <input type="date" id="docDateFrom" onchange="renderDocuments()">
+      <input type="date" id="docDateTo" onchange="renderDocuments()">
+      <button class="btn secondary" onclick="clearDocFilters()">ล้างตัวกรอง</button>
+    </div>
+
+    <div class="doc-grid" id="docGrid"></div>
+    <div id="docEmpty" class="empty" style="display:none;">
+      <div class="big">ไม่พบเอกสาร</div>
+      ลองปรับตัวกรอง หรือบันทึกใบกำกับใหม่ในแท็บ Invoice
+    </div>
+  </div>
+
+</div>
+
+<div id="docModalOverlay" class="modal-overlay" style="display:none;" onclick="closeModalOnOverlay(event)">
+  <div class="modal-box" id="docModalBox"></div>
+</div>
+
+<script>
+  // ---------- state ----------
+  let invoices = [];
+  let idCounter = 1;
+  let yardRowCount = 0;
+  const LOW_STOCK_THRESHOLD = 50;
+
+  function todayISO(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+  document.getElementById('inDate').value = todayISO();
+
+  function fmtMoney(n){
+    return Number(n).toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtInt(n){
+    return Number(n).toLocaleString('th-TH');
+  }
+  function fmtYards(n){
+    return Number(n).toLocaleString('th-TH', {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+  function fmtDateTh(iso){
+    if(!iso) return '-';
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'2-digit'});
+  }
+  function fabricBadgeClass(type){
+    if(type === 'MILTON') return 'fab-milton';
+    if(type === 'Cotton Linen') return 'fab-cotton';
+    if(type === 'Thai silk') return 'fab-silk';
+    return 'fab-other';
+  }
+  function fabricIcon(type){
+    if(type === 'MILTON') return 'MLT';
+    if(type === 'Cotton Linen') return 'C/L';
+    if(type === 'Thai silk') return 'SLK';
+    return '—';
+  }
+  function docFileName(inv){
+    const customer = inv.customer ? inv.customer : 'ไม่ระบุชื่อ';
+    return `${customer} ${inv.invoiceNo}`;
+  }
+
+  function updateClock(){
+    const now = new Date();
+    document.getElementById('clockBox').textContent =
+      now.toLocaleDateString('th-TH', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) +
+      ' · ' + now.toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // ---------- tabs ----------
+  function switchTab(tab){
+    document.getElementById('panelInvoice').style.display = tab === 'invoice' ? 'block' : 'none';
+    document.getElementById('panelStock').style.display = tab === 'stock' ? 'block' : 'none';
+    document.getElementById('panelDocuments').style.display = tab === 'documents' ? 'block' : 'none';
+    document.getElementById('tabBtnInvoice').classList.toggle('active', tab === 'invoice');
+    document.getElementById('tabBtnStock').classList.toggle('active', tab === 'stock');
+    document.getElementById('tabBtnDocuments').classList.toggle('active', tab === 'documents');
+    if(tab === 'documents') renderDocuments();
+  }
+
+  // ---------- yard rows ----------
+  function addYardRow(){
+    yardRowCount++;
+    const rowId = yardRowCount;
+    const row = document.createElement('div');
+    row.className = 'yard-row';
+    row.id = 'yardRow' + rowId;
+    row.innerHTML = `
+      <span class="yard-index"></span>
+      <input type="number" min="0" step="0.01" class="yard-input" placeholder="0.0" oninput="recalcQty()">
+      <span class="yard-unit">หลา</span>
+      <button type="button" class="yard-remove" onclick="removeYardRow(${rowId})" title="ลบม้วนนี้">✕</button>
+    `;
+    document.getElementById('yardsRows').appendChild(row);
+    renumberYardRows();
+    recalcQty();
+  }
+  function removeYardRow(rowId){
+    const rows = document.querySelectorAll('.yard-row');
+    if(rows.length <= 1) return;
+    const el = document.getElementById('yardRow' + rowId);
+    if(el) el.remove();
+    renumberYardRows();
+    recalcQty();
+  }
+  function renumberYardRows(){
+    document.querySelectorAll('.yard-row').forEach((row, i) => {
+      row.querySelector('.yard-index').textContent = 'ม้วนที่ ' + (i + 1);
+    });
+  }
+  function recalcQty(){
+    const vals = [...document.querySelectorAll('.yard-input')].map(i => parseFloat(i.value) || 0);
+    const sum = vals.reduce((a,b) => a+b, 0);
+    document.getElementById('inQtyDisplay').value = fmtYards(sum);
+    return sum;
+  }
+  function getYardValues(){
+    return [...document.querySelectorAll('.yard-input')].map(i => parseFloat(i.value) || 0).filter(v => v > 0);
+  }
+  function resetYardRows(){
+    document.getElementById('yardsRows').innerHTML = '';
+    yardRowCount = 0;
+    addYardRow();
+  }
+  addYardRow();
+
+  // ---------- manual stock: color rows, yards columns ----------
+  let stockRowCount = 0;
+  const stockColCounters = {};
+
+  function addStockRow(){
+    stockRowCount++;
+    const rowId = stockRowCount;
+    stockColCounters[rowId] = 0;
+    const row = document.createElement('div');
+    row.className = 'stock-row';
+    row.id = 'stockRow' + rowId;
+    row.innerHTML = `
+      <input type="text" class="stock-color-input" placeholder="สี COLOR #" oninput="recalcStockTotals()">
+      <div class="stock-yds-list" id="stockYdsList${rowId}"></div>
+      <button type="button" class="btn-add-col" onclick="addStockYdsCol(${rowId})">+ คอลัมน์</button>
+      <div class="stock-row-total num" id="stockRowTotal${rowId}">0</div>
+      <button type="button" class="stock-row-remove" onclick="removeStockRow(${rowId})" title="ลบแถวนี้">✕</button>
+    `;
+    document.getElementById('manualStockRows').appendChild(row);
+    addStockYdsCol(rowId);
+  }
+
+  function addStockYdsCol(rowId){
+    stockColCounters[rowId] = (stockColCounters[rowId] || 0) + 1;
+    const colId = stockColCounters[rowId];
+    const wrap = document.createElement('div');
+    wrap.className = 'stock-yds-col';
+    wrap.id = `stockCol${rowId}_${colId}`;
+    wrap.innerHTML = `
+      <input type="number" min="0" step="0.01" class="stock-yds-input" placeholder="0.0" oninput="recalcStockTotals()">
+      <button type="button" class="stock-col-remove" onclick="removeStockYdsCol(${rowId}, ${colId})" title="ลบคอลัมน์นี้">✕</button>
+    `;
+    document.getElementById('stockYdsList' + rowId).appendChild(wrap);
+    recalcStockTotals();
+  }
+
+  function removeStockYdsCol(rowId, colId){
+    const list = document.getElementById('stockYdsList' + rowId);
+    if(!list || list.querySelectorAll('.stock-yds-col').length <= 1) return;
+    const el = document.getElementById(`stockCol${rowId}_${colId}`);
+    if(el) el.remove();
+    recalcStockTotals();
+  }
+
+  function removeStockRow(rowId){
+    const el = document.getElementById('stockRow' + rowId);
+    if(el) el.remove();
+    delete stockColCounters[rowId];
+    recalcStockTotals();
+  }
+
+  function recalcStockTotals(){
+    let grand = 0;
+    document.querySelectorAll('.stock-row').forEach(row => {
+      const inputs = row.querySelectorAll('.stock-yds-input');
+      const rowTotal = [...inputs].reduce((sum, inp) => sum + (parseFloat(inp.value) || 0), 0);
+      const totalEl = row.querySelector('.stock-row-total');
+      if(totalEl) totalEl.textContent = fmtYards(rowTotal);
+      grand += rowTotal;
+    });
+    const grandEl = document.getElementById('grandTotalYds');
+    if(grandEl) grandEl.textContent = fmtYards(grand);
+  }
+
+  addStockRow();
+
+  // ---------- invoice CRUD ----------
+  function addInvoice(){
+    const invoiceNo = document.getElementById('inInvoiceNo').value.trim();
+    const date = document.getElementById('inDate').value;
+    const fabricType = document.getElementById('inFabricType').value;
+    const customer = document.getElementById('inCustomer').value.trim();
+    const color = document.getElementById('inColor').value.trim();
+    const price = parseFloat(document.getElementById('inPrice').value);
+    const yards = getYardValues();
+    const qty = yards.reduce((a,b) => a+b, 0);
+    const fileInput = document.getElementById('inFile');
+    const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+    const errBox = document.getElementById('formError');
+    if(!invoiceNo || !date || !color || qty <= 0 || isNaN(price) || price < 0){
+      errBox.textContent = 'กรุณากรอกข้อมูลให้ครบ: เลขที่ใบกำกับ, วันที่, สี (COL #), หลาอย่างน้อย 1 ม้วน (>0) และราคาต่อหลา';
+      errBox.style.display = 'block';
+      return;
+    }
+    errBox.style.display = 'none';
+
+    invoices.push({
+      id: idCounter++,
+      invoiceNo, date, fabricType, customer, color,
+      yards, qty, price, total: qty * price,
+      fileName: file ? file.name : null,
+      fileUrl: file ? URL.createObjectURL(file) : null,
+      recordedAt: new Date().toISOString()
+    });
+
+    document.getElementById('inInvoiceNo').value = '';
+    document.getElementById('inColor').value = '';
+    document.getElementById('inPrice').value = '';
+    document.getElementById('inCustomer').value = '';
+    document.getElementById('inDate').value = todayISO();
+    document.getElementById('inFabricType').selectedIndex = 0;
+    fileInput.value = '';
+    resetYardRows();
+
+    renderAll();
+  }
+
+  function deleteInvoice(id){
+    invoices = invoices.filter(inv => inv.id !== id);
+    renderAll();
+  }
+
+  // ---------- rendering: invoice table ----------
+  function renderInvoiceTable(){
+    const tbody = document.getElementById('invoiceTbody');
+    const empty = document.getElementById('invoiceEmpty');
+    const table = document.getElementById('invoiceTable');
+
+    if(invoices.length === 0){
+      table.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    table.style.display = 'table';
+    empty.style.display = 'none';
+
+    const sorted = [...invoices].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+    tbody.innerHTML = sorted.map(inv => `
+      <tr>
+        <td class="num">${inv.invoiceNo}</td>
+        <td>${fmtDateTh(inv.date)}</td>
+        <td><span class="badge ${fabricBadgeClass(inv.fabricType)}">${inv.fabricType}</span></td>
+        <td>${inv.color}</td>
+        <td style="color:var(--ink-soft);">${inv.customer || '-'}</td>
+        <td class="right num">${fmtYards(inv.qty)}</td>
+        <td class="right num">${fmtMoney(inv.price)}</td>
+        <td class="right num" style="font-weight:600;">${fmtMoney(inv.total)}</td>
+        <td><button class="btn danger" onclick="deleteInvoice(${inv.id})">ลบ</button></td>
+      </tr>
+    `).join('');
+  }
+
+  // ---------- stock ----------
+  function computeStock(){
+    const map = {};
+    invoices.forEach(inv => {
+      const key = inv.fabricType + '||' + inv.color;
+      if(!map[key]){
+        map[key] = { fabricType: inv.fabricType, color: inv.color, totalYards: 0, invoiceCount: 0, lastDate: inv.date };
+      }
+      const s = map[key];
+      s.totalYards += inv.qty;
+      s.invoiceCount += 1;
+      if(inv.date > s.lastDate) s.lastDate = inv.date;
+    });
+    return Object.values(map).sort((a,b) =>
+      a.fabricType.localeCompare(b.fabricType, 'th') || a.color.localeCompare(b.color, 'th')
+    );
+  }
+
+  function renderStockTable(){
+    const stock = computeStock();
+    const tbody = document.getElementById('stockTbody');
+    const empty = document.getElementById('stockEmpty');
+    const table = document.getElementById('stockTable');
+
+    if(stock.length === 0){
+      table.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    table.style.display = 'table';
+    empty.style.display = 'none';
+
+    tbody.innerHTML = stock.map(s => {
+      let statusBadge;
+      if(s.totalYards <= 0){
+        statusBadge = `<span class="badge out">หมดสต๊อก</span>`;
+      } else if(s.totalYards < LOW_STOCK_THRESHOLD){
+        statusBadge = `<span class="badge low">ใกล้หมด</span>`;
+      } else {
+        statusBadge = `<span class="badge ok">ปกติ</span>`;
+      }
+      return `
+        <tr>
+          <td><span class="badge ${fabricBadgeClass(s.fabricType)}">${s.fabricType}</span></td>
+          <td style="font-weight:500;">${s.color}</td>
+          <td class="right num" style="font-weight:700;font-size:14.5px;">${fmtYards(s.totalYards)}</td>
+          <td class="right num">${fmtInt(s.invoiceCount)}</td>
+          <td>${statusBadge}</td>
+          <td style="color:var(--ink-soft);">${fmtDateTh(s.lastDate)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ---------- summary ----------
+  function renderSummary(){
+    const totalInvoices = invoices.length;
+    const totalYards = invoices.reduce((s,i) => s + i.qty, 0);
+    const totalValue = invoices.reduce((s,i) => s + i.total, 0);
+    const stock = computeStock();
+    const lowCount = stock.filter(s => s.totalYards < LOW_STOCK_THRESHOLD && s.totalYards > 0).length;
+    const outCount = stock.filter(s => s.totalYards <= 0).length;
+
+    document.getElementById('summaryGrid').innerHTML = `
+      <div class="stat-card">
+        <div class="tag">ใบกำกับทั้งหมด</div>
+        <div class="val">${fmtInt(totalInvoices)}</div>
+        <div class="sub">รายการที่บันทึก</div>
+      </div>
+      <div class="stat-card">
+        <div class="tag">หลารวมทั้งหมด</div>
+        <div class="val" style="color:var(--teal);">${fmtYards(totalYards)}</div>
+        <div class="sub">หลา</div>
+      </div>
+      <div class="stat-card">
+        <div class="tag">มูลค่ารวม</div>
+        <div class="val" style="color:var(--navy);">฿${fmtMoney(totalValue)}</div>
+        <div class="sub">ทุกรายการ</div>
+      </div>
+      <div class="stat-card ${outCount>0 ? 'bad' : lowCount>0 ? 'warn' : ''}">
+        <div class="tag">สี/ประเภทใกล้หมด</div>
+        <div class="val">${fmtInt(lowCount + outCount)}</div>
+        <div class="sub">${outCount>0 ? outCount+' รายการหมดสต๊อก' : 'จาก '+stock.length+' รายการ'}</div>
+      </div>
+    `;
+  }
+
+  function renderAll(){
+    renderInvoiceTable();
+    renderStockTable();
+    renderSummary();
+    if(document.getElementById('panelDocuments').style.display !== 'none'){
+      renderDocuments();
+    }
+  }
+
+  // ---------- documents archive ----------
+  function clearDocFilters(){
+    document.getElementById('docSearch').value = '';
+    document.getElementById('docTypeFilter').value = '';
+    document.getElementById('docDateFrom').value = '';
+    document.getElementById('docDateTo').value = '';
+    renderDocuments();
+  }
+
+  function renderDocuments(){
+    const q = document.getElementById('docSearch').value.trim().toLowerCase();
+    const typeF = document.getElementById('docTypeFilter').value;
+    const fromF = document.getElementById('docDateFrom').value;
+    const toF = document.getElementById('docDateTo').value;
+
+    let list = [...invoices].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+    if(q){
+      list = list.filter(inv =>
+        inv.invoiceNo.toLowerCase().includes(q) ||
+        inv.color.toLowerCase().includes(q) ||
+        (inv.customer && inv.customer.toLowerCase().includes(q))
+      );
+    }
+    if(typeF) list = list.filter(inv => inv.fabricType === typeF);
+    if(fromF) list = list.filter(inv => inv.date >= fromF);
+    if(toF) list = list.filter(inv => inv.date <= toF);
+
+    const grid = document.getElementById('docGrid');
+    const empty = document.getElementById('docEmpty');
+
+    if(list.length === 0){
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    grid.innerHTML = list.map(inv => `
+      <div class="doc-card" onclick="openDocModal(${inv.id})">
+        <div class="file-icon ${fabricBadgeClass(inv.fabricType)}">
+          <div class="body"></div>
+          <div class="fold"></div>
+          <div class="line line1"></div>
+          <div class="line line2"></div>
+        </div>
+        <div class="doc-main">
+          <div class="doc-title">${docFileName(inv)}</div>
+          <div class="doc-sub">
+            <span class="badge ${fabricBadgeClass(inv.fabricType)}">${inv.fabricType}</span>
+            <span>สี ${inv.color}</span>
+            <span>·</span>
+            <span>${fmtDateTh(inv.date)}</span>
+          </div>
+        </div>
+        <div class="doc-right">
+          <div class="doc-total num">฿${fmtMoney(inv.total)}</div>
+          ${inv.fileName ? `<div class="doc-attach">📎 ${inv.fileName}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openDocModal(id){
+    const inv = invoices.find(i => i.id === id);
+    if(!inv) return;
+    const box = document.getElementById('docModalBox');
+    const rollsHtml = inv.yards.map((y,i) => `<span class="roll-chip">ม้วน ${i+1}: ${fmtYards(y)} หลา</span>`).join('');
+    box.innerHTML = `
+      <button class="modal-close" onclick="closeDocModal()">✕</button>
+      <h3>${docFileName(inv)}</h3>
+      <p class="modal-sub">เลขที่ใบกำกับ ${inv.invoiceNo} · บันทึกเมื่อ ${fmtDateTh(inv.date)}</p>
+      <div class="modal-grid">
+        <div class="modal-field"><div class="k">ประเภทผ้า</div><div class="v"><span class="badge ${fabricBadgeClass(inv.fabricType)}">${inv.fabricType}</span></div></div>
+        <div class="modal-field"><div class="k">สี (COL #)</div><div class="v">${inv.color}</div></div>
+        <div class="modal-field"><div class="k">นามลูกค้า</div><div class="v">${inv.customer || '-'}</div></div>
+        <div class="modal-field"><div class="k">ราคาต่อหลา</div><div class="v num">฿${fmtMoney(inv.price)}</div></div>
+        <div class="modal-field full"><div class="k">หลาแต่ละม้วน</div><div class="v">${rollsHtml}</div></div>
+        <div class="modal-field"><div class="k">หลารวม</div><div class="v num">${fmtYards(inv.qty)}</div></div>
+      </div>
+      <div class="modal-total">
+        <div class="k">มูลค่ารวม</div>
+        <div class="v">฿${fmtMoney(inv.total)}</div>
+      </div>
+      ${inv.fileName ? `<div style="margin-top:14px;font-size:13px;">📎 <a href="${inv.fileUrl}" target="_blank" style="color:var(--teal);">${inv.fileName}</a></div>` : ''}
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeDocModal()">ปิด</button>
+        <button class="btn danger" style="border-color:var(--coral);" onclick="deleteInvoice(${inv.id}); closeDocModal();">ลบใบกำกับนี้</button>
+      </div>
+    `;
+    document.getElementById('docModalOverlay').style.display = 'flex';
+  }
+
+  function closeDocModal(){
+    document.getElementById('docModalOverlay').style.display = 'none';
+  }
+  function closeModalOnOverlay(e){
+    if(e.target.id === 'docModalOverlay') closeDocModal();
+  }
+
+  renderAll();
+</script>
+
+</body>
+</html>
