@@ -1,0 +1,2318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fabric Invoice &amp; Stock Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#122437;
+    --navy-2:#1B3A56;
+    --paper:#F6F4EC;
+    --card:#FFFFFF;
+    --line: #E4DFD0;
+    --teal:#0F6E56;
+    --teal-light:#E1F0EB;
+    --amber:#B4740E;
+    --amber-light:#FBEEDA;
+    --coral:#B84A3C;
+    --coral-light:#FBEAE7;
+    --purple:#5B4B9E;
+    --purple-light:#ECE9F7;
+    --ink:#1E2430;
+    --ink-soft:#6A7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter','Noto Sans Thai',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{font-family:'Space Grotesk','Noto Sans Thai',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header.topbar{
+    background:var(--navy);
+    color:#EDEFE8;
+    padding:22px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:4px solid var(--teal);
+  }
+  header.topbar .brand{display:flex;align-items:center;gap:14px;}
+  header.topbar .brand .mark{
+    width:38px;height:38px;border-radius:8px;
+    background:var(--teal);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk';font-weight:700;font-size:15px;color:#fff;
+    flex-shrink:0;
+  }
+  header.topbar h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px;}
+  header.topbar p{margin:2px 0 0;font-size:12.5px;color:#AEB9C4;}
+  header.topbar .clock{font-size:12px;color:#9DAAB6;text-align:right;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 32px 60px;}
+
+  .summary-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:26px;
+  }
+  .stat-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .stat-card .tag{
+    font-size:11px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--ink-soft);font-weight:600;
+  }
+  .stat-card .val{
+    font-family:'Space Grotesk';font-size:24px;font-weight:600;margin-top:6px;
+  }
+  .stat-card .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .stat-card.warn .val{color:var(--amber);}
+  .stat-card.bad .val{color:var(--coral);}
+
+  .tabbar{
+    display:flex;
+    gap:0;
+    margin-bottom:0;
+    position:relative;
+    z-index:1;
+  }
+  .tabbtn{
+    font-family:'Space Grotesk';
+    font-size:14.5px;
+    font-weight:600;
+    padding:12px 26px;
+    background:#EAE6D8;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:10px 10px 0 0;
+    cursor:pointer;
+    margin-right:4px;
+    transition:all .15s ease;
+    display:flex;align-items:center;gap:8px;
+  }
+  .tabbtn:hover{background:#F1EEE1;}
+  .tabbtn.active{
+    background:var(--card);
+    color:var(--navy);
+    border-color:var(--line);
+    box-shadow:0 -2px 0 var(--teal) inset;
+  }
+  .tabbtn .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);}
+  .tabbtn:not(.active) .dot{opacity:.35;}
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:0 10px 10px 10px;
+    padding:26px;
+  }
+
+  h2.section-title{
+    font-family:'Space Grotesk';font-size:16px;font-weight:600;margin:0 0 4px;color:var(--navy);
+  }
+  p.section-sub{font-size:13px;color:var(--ink-soft);margin:0 0 20px;}
+  h3.sub-title{font-family:'Space Grotesk';font-size:13.5px;font-weight:600;margin:20px 0 10px;color:var(--navy);}
+
+  .header-mini-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    max-width:560px;
+  }
+  .form-grid{
+    display:grid;
+    gap:12px;
+  }
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}
+  .field input, .field select, .field textarea{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:'Inter','Noto Sans Thai',sans-serif;
+    background:#FDFCF9;
+    color:var(--ink);
+    resize:vertical;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);
+  }
+  .field input[readonly]{
+    background:var(--teal-light);color:var(--teal);font-weight:700;font-family:'IBM Plex Mono';border-color:var(--teal-light);
+  }
+
+  .type-block{
+    border:1px solid var(--navy-2);
+    border-radius:10px;
+    padding:16px 18px;
+    margin-bottom:18px;
+    background:#F4F6F5;
+  }
+  .type-block-header{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+  }
+  .type-block-title{
+    font-family:'Space Grotesk';font-weight:700;font-size:12.5px;color:var(--navy);
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  .type-block-remove{
+    font-family:'Space Grotesk';font-weight:600;font-size:11.5px;
+    border:1px solid var(--coral-light);background:transparent;color:var(--coral);
+    padding:4px 10px;border-radius:6px;cursor:pointer;
+  }
+  .type-block-remove:hover{background:var(--coral-light);}
+  .type-block-fabric-field{max-width:280px;margin-bottom:14px;}
+
+  .color-block{
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:14px 16px;
+    margin-bottom:14px;
+    background:#FDFCF9;
+  }
+  .color-block-header{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
+  }
+  .color-block-title{
+    font-family:'Space Grotesk';font-weight:600;font-size:12px;color:var(--navy);
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  .color-block-remove{
+    font-family:'Space Grotesk';font-weight:600;font-size:11.5px;
+    border:1px solid var(--coral-light);background:transparent;color:var(--coral);
+    padding:4px 10px;border-radius:6px;cursor:pointer;
+  }
+  .color-block-remove:hover{background:var(--coral-light);}
+  tr.group-start td{border-top:2px solid var(--line);}
+
+  .yards-block{
+    border:1px dashed var(--line);
+    border-radius:9px;
+    padding:14px 16px;
+    margin-top:14px;
+    background:#FDFCF9;
+  }
+  .yards-block .yards-label{
+    font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;
+    display:block;margin-bottom:10px;
+  }
+  .yard-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .yard-row .yard-index{font-size:12.5px;color:var(--ink-soft);width:80px;flex-shrink:0;}
+  .yard-row .yard-input{
+    flex:1;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+    font-size:13.5px;font-family:'IBM Plex Mono';background:#fff;color:var(--ink);
+  }
+  .yard-row .yard-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);}
+  .yard-row .yard-unit{font-size:12.5px;color:var(--ink-soft);width:32px;}
+  .yard-remove{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--coral-light);
+    background:transparent;color:var(--coral);cursor:pointer;font-size:13px;flex-shrink:0;
+  }
+  .yard-remove:hover{background:var(--coral-light);}
+
+  .stock-roll-del{
+    width:15px;height:15px;border-radius:4px;border:1px solid var(--coral-light);
+    background:transparent;color:var(--coral);cursor:pointer;font-size:8.5px;line-height:1;
+    padding:0;flex-shrink:0;margin-left:5px;
+  }
+  .stock-roll-del:hover{background:var(--coral-light);}
+  .roll-val-cell{display:inline-flex;align-items:center;justify-content:flex-end;gap:0;white-space:nowrap;}
+
+  .btn{
+    font-family:'Space Grotesk';
+    font-weight:600;
+    font-size:13.5px;
+    padding:10px 20px;
+    border-radius:7px;
+    border:1px solid var(--teal);
+    background:var(--teal);
+    color:#fff;
+    cursor:pointer;
+    transition:opacity .12s ease;
+  }
+  .btn:hover{opacity:.9;}
+  .btn.secondary{
+    background:transparent;color:var(--navy);border-color:var(--line);
+  }
+  .btn.secondary:hover{background:#F4F2E9;}
+  .btn.danger{
+    background:transparent;color:var(--coral);border-color:var(--coral-light);
+    padding:6px 10px;font-size:12px;
+  }
+  .btn.danger:hover{background:var(--coral-light);}
+  .btn-add-roll{padding:7px 14px;font-size:12.5px;}
+
+  table{width:100%;border-collapse:collapse;margin-top:18px;}
+  thead th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;
+    color:var(--ink-soft);font-weight:600;padding:8px 10px;border-bottom:2px solid var(--line);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:11px 10px;font-size:13.5px;border-bottom:1px solid var(--line);vertical-align:middle;
+  }
+  tbody tr:hover{background:#FBFAF5;}
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px;
+    white-space:nowrap;
+  }
+  .badge.fab-milton{background:var(--teal-light);color:var(--teal);}
+  .badge.fab-cotton{background:var(--amber-light);color:var(--amber);}
+  .badge.fab-silk{background:var(--purple-light);color:var(--purple);}
+  .badge.fab-other{background:#EEECE3;color:var(--ink-soft);}
+  .badge.ok{background:var(--teal-light);color:var(--teal);}
+  .badge.low{background:var(--amber-light);color:var(--amber);}
+  .badge.out{background:var(--coral-light);color:var(--coral);}
+
+  .empty{
+    text-align:center;padding:40px 20px;color:var(--ink-soft);font-size:13.5px;
+  }
+  .empty .big{font-family:'Space Grotesk';font-size:15px;color:var(--navy);margin-bottom:4px;font-weight:600;}
+
+  .num{font-family:'IBM Plex Mono';}
+  .right{text-align:right;}
+
+  .filter-bar{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr 1fr auto;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .filter-bar input, .filter-bar select{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 10px;
+    font-size:13px;
+    font-family:'Inter','Noto Sans Thai',sans-serif;
+    background:#FDFCF9;
+    color:var(--ink);
+  }
+  .filter-bar input:focus, .filter-bar select:focus{
+    outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);
+  }
+
+  .doc-grid{
+    display:flex;flex-direction:column;
+    border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  }
+  .doc-card{
+    border-bottom:1px solid var(--line);
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    cursor:pointer;
+    transition:background .12s ease;
+    background:#FDFCF9;
+  }
+  .doc-card:last-child{border-bottom:none;}
+  .doc-card:hover{background:var(--teal-light);}
+
+  .file-icon{width:30px;height:36px;flex-shrink:0;position:relative;}
+  .file-icon .body{
+    position:absolute;inset:0;
+    clip-path:polygon(0 0, 68% 0, 100% 30%, 100% 100%, 0 100%);
+    border-radius:2px;
+  }
+  .file-icon .fold{
+    position:absolute;top:0;right:0;width:0;height:0;
+    border-style:solid;border-width:0 10px 10px 0;
+  }
+  .file-icon .line{position:absolute;left:6px;right:8px;height:2px;border-radius:1px;}
+  .file-icon .line1{top:16px;}
+  .file-icon .line2{top:22px;right:12px;}
+  .file-icon.fab-milton .body{background:var(--teal-light);border:1px solid #9FE1CB;}
+  .file-icon.fab-milton .fold{border-color:transparent #9FE1CB transparent transparent;}
+  .file-icon.fab-milton .line{background:#5DCAA5;}
+  .file-icon.fab-cotton .body{background:var(--amber-light);border:1px solid #F0C98A;}
+  .file-icon.fab-cotton .fold{border-color:transparent #F0C98A transparent transparent;}
+  .file-icon.fab-cotton .line{background:#D9A54B;}
+  .file-icon.fab-silk .body{background:var(--purple-light);border:1px solid #C6BEE8;}
+  .file-icon.fab-silk .fold{border-color:transparent #C6BEE8 transparent transparent;}
+  .file-icon.fab-silk .line{background:#8A7BC8;}
+  .file-icon.fab-other .body{background:#EEECE3;border:1px solid #D8D5C8;}
+  .file-icon.fab-other .fold{border-color:transparent #D8D5C8 transparent transparent;}
+  .file-icon.fab-other .line{background:#A9A79C;}
+
+  .doc-card .doc-main{flex:1;min-width:0;}
+  .doc-card .doc-title{
+    font-family:'IBM Plex Mono';font-weight:600;font-size:14px;color:var(--navy);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .doc-card .doc-sub{
+    font-size:12px;color:var(--ink-soft);margin-top:3px;
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+  .doc-card .doc-right{text-align:right;flex-shrink:0;}
+  .doc-card .doc-total{font-family:'IBM Plex Mono';font-weight:600;font-size:13.5px;}
+  .doc-card .doc-attach{font-size:11px;color:var(--teal);margin-top:3px;display:flex;align-items:center;gap:4px;justify-content:flex-end;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(18,36,55,.45);
+    display:flex;align-items:flex-start;justify-content:center;
+    padding:40px 20px;z-index:50;overflow-y:auto;
+  }
+  .modal-box{
+    background:#fff;border-radius:12px;max-width:560px;width:100%;
+    padding:28px 30px;position:relative;
+  }
+  .modal-box .modal-close{
+    position:absolute;top:16px;right:16px;background:none;border:none;
+    font-size:18px;color:var(--ink-soft);cursor:pointer;line-height:1;
+  }
+  .modal-box h3{font-family:'Space Grotesk';font-size:17px;margin:0 0 2px;color:var(--navy);}
+  .modal-box .modal-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  .modal-field .k{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);font-weight:600;margin-bottom:3px;}
+  .modal-field .v{font-size:14px;color:var(--ink);}
+  .modal-field.full{grid-column:1 / -1;}
+  .modal-total{
+    border-top:1px solid var(--line);padding-top:14px;margin-top:4px;
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .modal-total .k{font-size:13px;color:var(--ink-soft);}
+  .modal-total .v{font-family:'IBM Plex Mono';font-size:20px;font-weight:700;color:var(--navy);}
+  .modal-actions{display:flex;gap:8px;margin-top:20px;}
+
+  .doc-print-btn{
+    font-family:'Space Grotesk';font-weight:600;font-size:11px;
+    padding:4px 10px;border-radius:6px;border:1px solid var(--teal-light);
+    background:var(--teal-light);color:var(--teal);cursor:pointer;white-space:nowrap;
+  }
+  .doc-print-btn:hover{background:var(--teal);color:#fff;}
+
+  .inv-doc-toolbar{
+    display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;
+    background:var(--paper);border-bottom:1px solid var(--line);
+  }
+  .inv-doc-sheet-wrap{
+    max-width:760px;margin:0 auto;padding:34px 44px 40px;background:#fff;color:#111;
+    font-family:'Noto Sans Thai','Inter',sans-serif;
+  }
+  .inv-doc-title{text-align:center;font-weight:700;font-size:16px;margin-bottom:16px;}
+  .inv-doc-toprow{display:flex;justify-content:space-between;gap:20px;font-size:13px;margin-bottom:4px;}
+  .inv-doc-toprow .inv-doc-customer div, .inv-doc-toprow .inv-doc-meta div{margin-bottom:5px;}
+  .inv-doc-original{text-align:right;color:#CC0000;font-weight:700;font-size:12px;margin:6px 0 4px;}
+  .inv-doc-fill{color:#1A56DB;font-weight:600;}
+  .inv-doc-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px;}
+  .inv-doc-table th, .inv-doc-table td{border:1px solid #333;padding:6px 8px;}
+  .inv-doc-table th{background:#f2f2f2;font-weight:700;text-align:center;}
+  .inv-doc-table td.right{text-align:right;}
+  .inv-doc-table tr.inv-doc-fabric-row td{background:#fafafa;font-weight:700;}
+  .inv-doc-table tfoot td{font-weight:700;border-top:2px solid #333;}
+  .inv-doc-disclaimer{color:#CC0000;font-weight:700;font-size:10.5px;margin-top:16px;line-height:1.5;}
+  .inv-doc-terms{font-weight:700;margin-top:10px;font-size:12.5px;}
+  .inv-doc-cheque{color:#CC0000;font-weight:700;font-size:12.5px;margin-top:2px;}
+  .inv-doc-bottom{display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;font-size:11px;line-height:1.6;}
+  .inv-doc-signature{border-top:1px solid #333;padding-top:6px;width:200px;text-align:center;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #invoiceDocOverlay, #invoiceDocOverlay *{visibility:visible;}
+    #invoiceDocOverlay{position:absolute;top:0;left:0;width:100%;background:#fff;}
+    .no-print{display:none !important;}
+  }
+  .roll-chip{
+    display:inline-flex;align-items:center;gap:4px;
+    background:var(--teal-light);color:var(--teal);
+    font-family:'IBM Plex Mono';font-size:12px;font-weight:600;
+    padding:3px 9px;border-radius:6px;margin:0 6px 6px 0;
+  }
+
+  .stock-add-section{margin-top:30px;padding-top:22px;border-top:1px solid var(--line);}
+
+  .stock-view-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .stock-view-chip{
+    font-family:'Space Grotesk';font-weight:600;font-size:12.5px;
+    padding:7px 16px;border-radius:20px;border:1px solid var(--line);
+    background:#FDFCF9;color:var(--ink-soft);cursor:pointer;transition:all .12s ease;
+  }
+  .stock-view-chip:hover{border-color:var(--teal);color:var(--teal);}
+  .stock-view-chip.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  .excel-import-box{
+    border:1px dashed var(--line);border-radius:9px;padding:16px;
+    background:#FDFCF9;margin-bottom:24px;
+  }
+  .excel-import-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap;}
+  .excel-import-row .field{flex:0 0 auto;}
+  .excel-import-row .field.grow{flex:1 1 220px;}
+  #stockImportResult{font-size:12.5px;margin-top:10px;}
+  #stockImportResult.success{color:var(--teal);}
+  #stockImportResult.error{color:var(--coral);}
+  .stock-row-header{
+    display:flex;align-items:center;gap:10px;padding:0 0 8px;
+    font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);font-weight:600;
+  }
+  .stock-row-header .h-color{width:140px;flex-shrink:0;}
+  .stock-row-header .h-yds{flex:1;}
+  .stock-row-header .h-total{width:90px;flex-shrink:0;text-align:right;}
+  .stock-row{
+    display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);
+  }
+  .stock-row:last-of-type{border-bottom:none;}
+  .stock-color-input{
+    width:140px;flex-shrink:0;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+    font-size:13.5px;font-family:'Inter','Noto Sans Thai',sans-serif;background:#FDFCF9;color:var(--ink);
+  }
+  .stock-color-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);}
+  .stock-yds-list{display:flex;flex-wrap:wrap;gap:8px;flex:1;}
+  .stock-yds-col{display:flex;align-items:center;gap:4px;}
+  .stock-yds-input{
+    width:88px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;
+    font-size:13px;font-family:'IBM Plex Mono';background:#fff;color:var(--ink);
+  }
+  .stock-yds-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light);}
+  .stock-col-remove{
+    width:20px;height:20px;border-radius:5px;border:1px solid var(--coral-light);background:transparent;
+    color:var(--coral);cursor:pointer;font-size:10px;flex-shrink:0;line-height:1;
+  }
+  .stock-col-remove:hover{background:var(--coral-light);}
+  .btn-add-col{
+    padding:7px 12px;font-size:12px;flex-shrink:0;
+    font-family:'Space Grotesk';font-weight:600;border-radius:7px;border:1px dashed var(--line);
+    background:transparent;color:var(--ink-soft);cursor:pointer;
+  }
+  .btn-add-col:hover{border-color:var(--teal);color:var(--teal);}
+  .stock-row-total{
+    width:90px;flex-shrink:0;text-align:right;font-weight:700;font-size:14px;color:var(--navy);
+  }
+  .stock-row-remove{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--coral-light);
+    background:transparent;color:var(--coral);cursor:pointer;font-size:13px;flex-shrink:0;
+  }
+  .stock-row-remove:hover{background:var(--coral-light);}
+  .grand-total-box{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-top:16px;padding-top:14px;border-top:2px solid var(--line);
+  }
+  .grand-total-box .label{font-family:'Space Grotesk';font-size:13.5px;color:var(--ink-soft);font-weight:600;}
+  .grand-total-box .value{font-family:'IBM Plex Mono';font-size:22px;font-weight:700;color:var(--navy);}
+
+  @media (max-width:900px){
+    .summary-grid{grid-template-columns:repeat(2,1fr);}
+    .header-mini-grid{grid-template-columns:1fr;max-width:none;}
+    .filter-bar{grid-template-columns:1fr 1fr;}
+    .wrap{padding:20px 16px 40px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="mark">IE</div>
+    <div>
+      <h1>Fabric Invoice &amp; Stock System</h1>
+      <p>Fabric Invoice &amp; Stock Log</p>
+    </div>
+  </div>
+  <div class="clock" id="clockBox">—</div>
+</header>
+
+<div class="wrap">
+
+  <div class="summary-grid" id="summaryGrid"></div>
+
+  <div class="tabbar">
+    <button class="tabbtn active" id="tabBtnInvoice" onclick="switchTab('invoice')">
+      <span class="dot"></span> Invoice
+    </button>
+    <button class="tabbtn" id="tabBtnStock" onclick="switchTab('stock')">
+      <span class="dot"></span> Stock
+    </button>
+    <button class="tabbtn" id="tabBtnDocuments" onclick="switchTab('documents')">
+      <span class="dot"></span> Documents
+    </button>
+  </div>
+
+  <div class="panel" id="panelInvoice">
+    <h2 class="section-title">Record New Invoice</h2>
+    <p class="section-sub">Enter fabric order details — the Stock tab updates automatically when you save</p>
+
+    <div class="header-mini-grid">
+      <div class="field">
+        <label>Invoice No.</label>
+        <input type="text" id="inInvoiceNo" placeholder="INV-0001">
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="inDate">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="field" style="flex:1;">
+          <label>Payment Terms</label>
+          <input type="text" id="inPaymentTerms" placeholder="e.g. 30 DAYS">
+        </div>
+        <div class="field" style="flex:1;">
+          <label>Post Dated</label>
+          <input type="text" id="inPostDated" placeholder="Optional">
+        </div>
+      </div>
+      <div class="field">
+        <label>Customer Name</label>
+        <input type="text" id="inCustomer" placeholder="Customer name">
+      </div>
+      <div class="field" style="grid-column:1 / -1;">
+        <label>Address</label>
+        <textarea id="inAddress" rows="2" placeholder="Customer address"></textarea>
+      </div>
+    </div>
+
+    <div id="typeBlocksContainer" style="margin-top:18px;"></div>
+    <button type="button" class="btn secondary" onclick="addTypeBlock()">+ Add Another Type</button>
+
+    <div class="form-grid" style="grid-template-columns:2fr 1fr;margin-top:14px;align-items:end;">
+      <div class="field">
+        <label>Attach Document (optional)</label>
+        <input type="file" id="inFile">
+      </div>
+      <div class="field">
+        <button class="btn" onclick="addInvoice()">+ Save Invoice</button>
+      </div>
+    </div>
+    <div id="formError" style="color:var(--coral);font-size:12.5px;display:none;margin-top:8px;"></div>
+
+    <h3 class="sub-title">Saved Records</h3>
+    <div style="overflow-x:auto;">
+    <table id="invoiceTable">
+      <thead>
+        <tr>
+          <th>No.</th><th>Date</th><th>Customer</th><th>Fabric Type</th><th>Color (COL #)</th>
+          <th class="right">Total Yards</th><th class="right">Baht/Yd</th><th class="right">Total</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="invoiceTbody"></tbody>
+    </table>
+    </div>
+    <div id="invoiceEmpty" class="empty" style="display:none;">
+      <div class="big">No invoices yet</div>
+      Fill in the form above to record your first invoice
+    </div>
+  </div>
+
+  <div class="panel" id="panelStock" style="display:none;">
+    <h2 class="section-title">Fabric Stock (Real-time)</h2>
+    <p class="section-sub">Grouped by fabric type (MILTON / Cotton Linen / Thai silk), showing each individual yard entry added and each deducted (from Invoice), with a small ✕ button to remove entries on either side — TOTAL and remaining balance update automatically.</p>
+
+    <div class="stock-view-tabs" id="stockViewTabs"></div>
+
+    <div id="stockByFabricContainer"></div>
+    <div id="stockEmpty" class="empty" style="display:none;">
+      <div class="big">No stock data yet</div>
+      Add stock manually below, or save an invoice in the Invoice tab to deduct from stock
+    </div>    <div class="grand-total-box" id="stockRemainingBox">
+      <span class="label">Total Remaining Stock (All Types/Colors)</span>
+      <span class="value num" id="stockRemainingTotal">0</span>
+    </div>
+
+    <div class="stock-add-section">
+      <h3 class="sub-title" style="margin-top:0;">Import Stock from Excel File</h3>
+      <p class="section-sub" style="margin-top:-6px;">Attach an .xlsx file with Color No / Yards / Total columns (same format as MILTON STOCK and THAI SILK) — the system reads it and adds to stock automatically. A value written as "17x30" is interpreted as 17 rolls of 30 yards each, combined into one entry.</p>
+
+      <div class="excel-import-box">
+        <div class="excel-import-row">
+          <div class="field">
+            <label>Fabric Type in This File</label>
+            <input type="text" id="importFabricType" list="fabricTypeList" placeholder="Type fabric name, e.g. MILTON" value="MILTON">
+          </div>
+          <div class="field grow">
+            <label>Excel File (.xlsx)</label>
+            <input type="file" id="stockExcelFile" accept=".xlsx,.xls">
+          </div>
+          <div class="field">
+            <button type="button" class="btn" onclick="importStockExcel()">Import File</button>
+          </div>
+        </div>
+        <div id="stockImportResult"></div>
+      </div>
+
+      <h3 class="sub-title" style="margin-top:0;">Add Stock Manually</h3>
+      <p class="section-sub" style="margin-top:-6px;">Choose a fabric type, then add Color (COLOR #) as new rows and Yards (YDS) as columns in each row — totals are calculated automatically. Each yard entry is stored individually and shown alongside the running total in the Real-time table above.</p>
+
+      <div class="field" style="max-width:260px;margin-bottom:14px;">
+        <label>Fabric Type</label>
+        <input type="text" id="stockFabricType" list="fabricTypeList" placeholder="Type fabric name, e.g. MILTON" value="MILTON">
+      </div>
+      <datalist id="fabricTypeList"></datalist>
+
+      <div class="stock-row-header">
+        <div class="h-color">Color (COLOR #)</div>
+        <div class="h-yds">Yards (YDS)</div>
+        <div class="h-total">TOTAL</div>
+        <div style="width:26px;"></div>
+      </div>
+      <div id="manualStockRows"></div>
+      <div style="display:flex;gap:10px;margin-top:12px;">
+        <button type="button" class="btn secondary" onclick="addStockRow()">+ Add Color (Add row)</button>
+        <button type="button" class="btn" onclick="saveManualStock()">Save Stock</button>
+      </div>
+      <div id="stockAddError" style="color:var(--coral);font-size:12.5px;display:none;margin-top:8px;"></div>
+
+      <div class="grand-total-box">
+        <span class="label">Total Yards Entered (Unsaved)</span>
+        <span class="value num" id="grandTotalYds">0</span>
+      </div>
+
+      <h3 class="sub-title">Stock Addition History (Saved Permanently)</h3>
+      <p class="section-sub" style="margin-top:-6px;">Saved entries are stored permanently and used to calculate the remaining balance.</p>
+      <div style="overflow-x:auto;">
+      <table id="stockHistoryTable">
+        <thead>
+          <tr>
+            <th>Fabric Type</th>
+            <th>Color (COLOR #)</th>
+            <th>Individual Yards</th>
+            <th class="right">Total Yards</th>
+            <th>Date Added</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stockHistoryTbody"></tbody>
+      </table>
+      </div>
+      <div id="stockHistoryEmpty" class="empty" style="display:none;">
+        <div class="big">No stock history yet</div>
+        Enter color and yards above, then click "Save Stock"
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panelDocuments" style="display:none;">
+    <h2 class="section-title">Document Archive</h2>
+    <p class="section-sub">Search and browse all saved invoices</p>
+
+    <div class="filter-bar">
+      <input type="text" id="docSearch" placeholder="Search invoice no., color, customer..." oninput="renderDocuments()">
+      <select id="docTypeFilter" onchange="renderDocuments()">
+        <option value="">All Fabric Types</option>
+        <option value="MILTON">MILTON</option>
+        <option value="Cotton Linen">Cotton Linen</option>
+        <option value="Thai silk">Thai silk</option>
+      </select>
+      <input type="date" id="docDateFrom" onchange="renderDocuments()">
+      <input type="date" id="docDateTo" onchange="renderDocuments()">
+      <button class="btn secondary" onclick="clearDocFilters()">Clear Filters</button>
+    </div>
+
+    <div class="doc-grid" id="docGrid"></div>
+    <div id="docEmpty" class="empty" style="display:none;">
+      <div class="big">No documents found</div>
+      Try adjusting the filters, or save a new invoice in the Invoice tab
+    </div>
+  </div>
+
+</div>
+
+<div id="docModalOverlay" class="modal-overlay" style="display:none;" onclick="closeModalOnOverlay(event)">
+  <div class="modal-box" id="docModalBox"></div>
+</div>
+
+<div id="invoiceDocOverlay" class="modal-overlay" style="display:none;padding:20px;" onclick="closeInvoiceDocOnOverlay(event)">
+  <div class="modal-box" style="max-width:820px;padding:0;overflow:hidden;" onclick="event.stopPropagation()">
+    <div class="inv-doc-toolbar no-print">
+      <button class="btn secondary" onclick="closeInvoiceDoc()">Close</button>
+      <button class="btn secondary" onclick="downloadInvoiceExcel(currentInvoiceDocId)">⬇ Download .xlsx</button>
+      <button class="btn" onclick="window.print()">🖶 Print Invoice</button>
+    </div>
+    <div class="inv-doc-sheet-wrap" id="invoiceDocContent"></div>
+  </div>
+</div>
+
+<script>
+  // ---------- state ----------
+  let invoices = [];
+  let currentInvoiceDocId = null;
+  let idCounter = 1;
+  let stockEntries = [];       // Manual stock entries (persisted permanently)
+  let stockEntryIdCounter = 1;
+  const LOW_STOCK_THRESHOLD = 50;
+  const FABRIC_TYPES_ORDER = ['MILTON', 'Cotton Linen', 'Thai silk'];
+
+  // ---------- persistence (window.storage — persists across sessions) ----------
+  const STORAGE_KEYS = {
+    invoices: 'invoices',
+    stockEntries: 'stock-entries'
+  };
+
+  async function saveData(){
+    try{
+      // fileUrl is a temporary blob URL valid only for this session, so it is not persisted
+      const invoicesToSave = invoices.map(inv => ({...inv, fileUrl: null}));
+      await window.storage.set(STORAGE_KEYS.invoices, JSON.stringify(invoicesToSave), false);
+      await window.storage.set(STORAGE_KEYS.stockEntries, JSON.stringify(stockEntries), false);
+    }catch(e){
+      console.error('Failed to save data:', e);
+    }
+  }
+
+  // Default seed stock from the attached MILTON STOCK MAY 26 file, used only when no data has been saved yet
+  function seedDefaultStock(){
+    const miltonRows = [
+      ['1',  [56, 56, 60]],
+      ['6',  [27.5]],
+      ['7',  [49, 57.5, 57]],
+      ['8',  [24, 69.5]],
+      ['11', [29]],
+      ['12', [59.5]],
+      ['20', [54.5, 59, 61.5]],
+      ['28', [58, 56, 29]],
+      ['32', [47, 51, 55, 56, 54.5, 55, 27, 55]],
+      ['34', [29]],
+      ['38', [33]],
+      ['39', [55, 51, 56, 57, 59]],
+      ['42', [47, 27]],
+      ['43', [55.5, 58, 52.5, 41.5, 55, 56, 25]],
+      ['61', [56.5, 61.5, 54.5, 54.5]]
+    ];
+    // From THAI_SILK_NEW.xlsx — a value written as "17x30" is interpreted as 17 rolls of 30 yards each, combined into one entry (510)
+    const thaiSilkRows = [
+      ['2',   [510, 39]],
+      ['5',   [450, 27.5, 30.5]],
+      ['10',  [150]],
+      ['11',  [720, 20]],
+      ['12',  [630, 12]],
+      ['231', [360, 30.5, 35, 33, 35, 24, 38]],
+      ['27',  [420, 23.5]],
+      ['31',  [60, 24.5, 22, 24]],
+      ['38',  [30]],
+      ['52',  [90, 25, 26, 23, 28.5, 29.5, 27]],
+      ['53',  [120]]
+    ];
+    const allRows = [
+      ...miltonRows.map(r => ({fabricType:'MILTON', color:r[0], yards:r[1]})),
+      ...thaiSilkRows.map(r => ({fabricType:'Thai silk', color:r[0], yards:r[1]}))
+    ];
+    stockEntries = allRows.map(r => ({
+      id: stockEntryIdCounter++,
+      fabricType: r.fabricType,
+      color: r.color,
+      yards: [...r.yards],
+      totalYards: r.yards.reduce((a,b) => a+b, 0),
+      dateAdded: todayISO(),
+      recordedAt: new Date().toISOString()
+    }));
+  }
+
+  // Migrate old invoice format (single color/price/yards) to the new format (items[] with multiple colors per invoice)
+  function migrateInvoice(inv){
+    if(!inv.items){
+      inv.items = [{
+        fabricType: inv.fabricType || '',
+        color: inv.color || '',
+        price: inv.price || 0,
+        yards: inv.yards || [],
+        qty: inv.qty || 0,
+        total: inv.total || 0
+      }];
+    } else {
+      // Older invoices stored fabricType once per invoice — backfill each item that lacks its own
+      inv.items.forEach(it => {
+        if(it.fabricType === undefined) it.fabricType = inv.fabricType || '';
+      });
+    }
+    if(inv.address === undefined) inv.address = '';
+    if(inv.paymentTerms === undefined) inv.paymentTerms = '';
+    if(inv.postDated === undefined) inv.postDated = '';
+    return inv;
+  }
+
+  async function loadData(){
+    try{
+      const invResult = await window.storage.get(STORAGE_KEYS.invoices, false);
+      if(invResult && invResult.value){
+        invoices = (JSON.parse(invResult.value) || []).map(migrateInvoice);
+        idCounter = invoices.reduce((max,i) => Math.max(max, i.id || 0), 0) + 1;
+      }
+    }catch(e){
+      // No saved data yet — use default (empty invoices)
+    }
+
+    let hasSavedStock = false;
+    try{
+      const seResult = await window.storage.get(STORAGE_KEYS.stockEntries, false);
+      if(seResult && seResult.value){
+        stockEntries = JSON.parse(seResult.value) || [];
+        stockEntryIdCounter = stockEntries.reduce((max,e) => Math.max(max, e.id || 0), 0) + 1;
+        hasSavedStock = true;
+      }
+    }catch(e){
+      // No saved data yet
+    }
+
+    if(!hasSavedStock){
+      seedDefaultStock();
+      saveData();
+    }
+
+    renderAll();
+  }
+  loadData();
+
+  function todayISO(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+  document.getElementById('inDate').value = todayISO();
+
+  function fmtMoney(n){
+    return Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtInt(n){
+    return Number(n).toLocaleString('en-US');
+  }
+  function fmtYards(n){
+    return Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2});
+  }
+  function fmtDateTh(iso){
+    if(!iso) return '-';
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', {day:'2-digit', month:'short', year:'2-digit'});
+  }
+  // Date format for the printed invoice, e.g. 31/07/2569 (Buddhist Era year)
+  function fmtDateSlash(iso){
+    if(!iso) return '-';
+    const d = new Date(iso + 'T00:00:00');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const beYear = d.getFullYear() + 543;
+    return `${dd}/${mm}/${beYear}`;
+  }
+  function escapeHtml(str){
+    return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function fabricBadgeClass(type){
+    if(type === 'MILTON') return 'fab-milton';
+    if(type === 'Cotton Linen') return 'fab-cotton';
+    if(type === 'Thai silk') return 'fab-silk';
+    return 'fab-other';
+  }
+  function fabricIcon(type){
+    if(type === 'MILTON') return 'MLT';
+    if(type === 'Cotton Linen') return 'C/L';
+    if(type === 'Thai silk') return 'SLK';
+    return '—';
+  }
+  function docFileName(inv){
+    const customer = inv.customer ? inv.customer : 'Unnamed';
+    return `${escapeHtml(customer)} ${escapeHtml(inv.invoiceNo)}`;
+  }
+
+  function updateClock(){
+    const now = new Date();
+    document.getElementById('clockBox').textContent =
+      now.toLocaleDateString('en-US', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) +
+      ' · ' + now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // ---------- tabs ----------
+  function switchTab(tab){
+    document.getElementById('panelInvoice').style.display = tab === 'invoice' ? 'block' : 'none';
+    document.getElementById('panelStock').style.display = tab === 'stock' ? 'block' : 'none';
+    document.getElementById('panelDocuments').style.display = tab === 'documents' ? 'block' : 'none';
+    document.getElementById('tabBtnInvoice').classList.toggle('active', tab === 'invoice');
+    document.getElementById('tabBtnStock').classList.toggle('active', tab === 'stock');
+    document.getElementById('tabBtnDocuments').classList.toggle('active', tab === 'documents');
+    if(tab === 'documents') renderDocuments();
+  }
+
+  // ---------- type blocks (one invoice can have multiple fabric types, each with multiple colors) ----------
+  let typeBlockCount = 0;
+  const typeBlockColorCounters = {};  // typeBlockId -> counter for color rows within it
+  const colorRowYardCounters = {};    // `${typeBlockId}_${colorId}` -> counter for yard rows
+
+  function addTypeBlock(){
+    typeBlockCount++;
+    const typeId = typeBlockCount;
+    typeBlockColorCounters[typeId] = 0;
+    const div = document.createElement('div');
+    div.className = 'type-block';
+    div.id = 'typeBlock' + typeId;
+    div.innerHTML = `
+      <div class="type-block-header">
+        <span class="type-block-title"></span>
+        <button type="button" class="type-block-remove" onclick="removeTypeBlock(${typeId})">✕ Remove Type</button>
+      </div>
+      <div class="field type-block-fabric-field">
+        <label>Fabric Type</label>
+        <select class="tb-fabric-type" onchange="updateAllRemainDisplaysForType(${typeId})"></select>
+      </div>
+      <div class="tb-colors" id="tbColors${typeId}"></div>
+      <button type="button" class="btn secondary" onclick="addColorRow(${typeId})">+ Add Another Color</button>
+    `;
+    document.getElementById('typeBlocksContainer').appendChild(div);
+    populateFabricTypeSelect(div.querySelector('.tb-fabric-type'));
+    addColorRow(typeId);
+    renumberTypeBlocks();
+  }
+
+  function removeTypeBlock(typeId){
+    const blocks = document.querySelectorAll('.type-block');
+    if(blocks.length <= 1) return;
+    const el = document.getElementById('typeBlock' + typeId);
+    if(el) el.remove();
+    delete typeBlockColorCounters[typeId];
+    Object.keys(colorRowYardCounters)
+      .filter(k => k.split('_')[0] === String(typeId))
+      .forEach(k => delete colorRowYardCounters[k]);
+    renumberTypeBlocks();
+  }
+
+  function renumberTypeBlocks(){
+    const blocks = document.querySelectorAll('.type-block');
+    blocks.forEach((block, i) => {
+      const title = block.querySelector('.type-block-title');
+      if(title) title.textContent = 'Type ' + (i + 1);
+      const removeBtn = block.querySelector('.type-block-remove');
+      if(removeBtn) removeBtn.style.display = blocks.length > 1 ? 'inline-flex' : 'none';
+    });
+  }
+
+  function resetTypeBlocks(){
+    document.getElementById('typeBlocksContainer').innerHTML = '';
+    typeBlockCount = 0;
+    Object.keys(typeBlockColorCounters).forEach(k => delete typeBlockColorCounters[k]);
+    Object.keys(colorRowYardCounters).forEach(k => delete colorRowYardCounters[k]);
+    addTypeBlock();
+  }
+
+  // ---------- color rows (nested inside a type block) ----------
+  function addColorRow(typeId){
+    typeBlockColorCounters[typeId] = (typeBlockColorCounters[typeId] || 0) + 1;
+    const colorId = typeBlockColorCounters[typeId];
+    const scopeId = typeId + '_' + colorId;
+    colorRowYardCounters[scopeId] = 0;
+    const div = document.createElement('div');
+    div.className = 'color-block';
+    div.id = 'colorBlock' + scopeId;
+    div.innerHTML = `
+      <div class="color-block-header">
+        <span class="color-block-title"></span>
+        <button type="button" class="color-block-remove" onclick="removeColorRow(${typeId}, ${colorId})">✕ Remove Color</button>
+      </div>
+      <div class="form-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="field">
+          <label>Color (COL #)</label>
+          <input type="text" class="cb-color" placeholder="e.g. COL 12" oninput="updateRemainDisplay('${scopeId}')">
+        </div>
+        <div class="field">
+          <label>Remain Stock</label>
+          <input type="text" class="cb-remain" readonly value="-" title="Remaining yards for this color, from the Stock tab">
+        </div>
+        <div class="field">
+          <label>Unit Price (THB/Yard)</label>
+          <input type="number" class="cb-price" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Quantity (Total Yards) *</label>
+          <input type="text" class="cb-qty" readonly value="0">
+        </div>
+      </div>
+      <div class="yards-block" style="margin-top:12px;">
+        <label class="yards-label">Yards</label>
+        <div class="cb-yards-rows" id="cbYardsRows${scopeId}"></div>
+        <button type="button" class="btn secondary btn-add-roll" onclick="addYardRow('${scopeId}')">+ Add Roll</button>
+      </div>
+    `;
+    document.getElementById('tbColors' + typeId).appendChild(div);
+    addYardRow(scopeId);
+    renumberColorRows(typeId);
+  }
+
+  function removeColorRow(typeId, colorId){
+    const container = document.getElementById('tbColors' + typeId);
+    if(!container) return;
+    if(container.querySelectorAll('.color-block').length <= 1) return;
+    const scopeId = typeId + '_' + colorId;
+    const el = document.getElementById('colorBlock' + scopeId);
+    if(el) el.remove();
+    delete colorRowYardCounters[scopeId];
+    renumberColorRows(typeId);
+  }
+
+  function renumberColorRows(typeId){
+    const container = document.getElementById('tbColors' + typeId);
+    if(!container) return;
+    const blocks = container.querySelectorAll('.color-block');
+    blocks.forEach((block, i) => {
+      const title = block.querySelector('.color-block-title');
+      if(title) title.textContent = 'Color ' + (i + 1);
+      const removeBtn = block.querySelector('.color-block-remove');
+      if(removeBtn) removeBtn.style.display = blocks.length > 1 ? 'inline-flex' : 'none';
+    });
+  }
+
+  // ---------- yard rows (scoped to a color row via "typeId_colorId" string) ----------
+  function addYardRow(scopeId){
+    colorRowYardCounters[scopeId] = (colorRowYardCounters[scopeId] || 0) + 1;
+    const rowId = colorRowYardCounters[scopeId];
+    const row = document.createElement('div');
+    row.className = 'yard-row';
+    row.id = `cbYardRow${scopeId}_${rowId}`;
+    row.innerHTML = `
+      <span class="yard-index"></span>
+      <input type="number" min="0" step="0.01" class="yard-input" placeholder="0.0" oninput="recalcQty('${scopeId}')">
+      <span class="yard-unit">yd</span>
+      <button type="button" class="yard-remove" onclick="removeYardRow('${scopeId}', ${rowId})" title="Remove this roll">✕</button>
+    `;
+    document.getElementById('cbYardsRows' + scopeId).appendChild(row);
+    renumberYardRows(scopeId);
+    recalcQty(scopeId);
+  }
+  function removeYardRow(scopeId, rowId){
+    const container = document.getElementById('cbYardsRows' + scopeId);
+    if(!container) return;
+    if(container.querySelectorAll('.yard-row').length <= 1) return;
+    const el = document.getElementById(`cbYardRow${scopeId}_${rowId}`);
+    if(el) el.remove();
+    renumberYardRows(scopeId);
+    recalcQty(scopeId);
+  }
+  function renumberYardRows(scopeId){
+    const container = document.getElementById('cbYardsRows' + scopeId);
+    if(!container) return;
+    container.querySelectorAll('.yard-row').forEach((row, i) => {
+      row.querySelector('.yard-index').textContent = 'Roll ' + (i + 1);
+    });
+  }
+  function recalcQty(scopeId){
+    const container = document.getElementById('cbYardsRows' + scopeId);
+    if(!container) return 0;
+    const vals = [...container.querySelectorAll('.yard-input')].map(i => parseFloat(i.value) || 0);
+    const sum = vals.reduce((a,b) => a+b, 0);
+    const block = document.getElementById('colorBlock' + scopeId);
+    const qtyField = block ? block.querySelector('.cb-qty') : null;
+    if(qtyField) qtyField.value = fmtYards(sum);
+    return sum;
+  }
+
+  function getTypeBlocksData(){
+    return [...document.querySelectorAll('.type-block')].map(typeBlock => {
+      const fabricType = typeBlock.querySelector('.tb-fabric-type').value;
+      const colors = [...typeBlock.querySelectorAll('.color-block')].map(block => {
+        const color = block.querySelector('.cb-color').value.trim();
+        const price = parseFloat(block.querySelector('.cb-price').value);
+        const yards = [...block.querySelectorAll('.yard-input')].map(i => parseFloat(i.value) || 0).filter(v => v > 0);
+        const qty = yards.reduce((a,b) => a+b, 0);
+        return {color, price, yards, qty};
+      });
+      return {fabricType, colors};
+    });
+  }
+  addTypeBlock();
+
+  // ---------- remain stock display (reads from Stock tab data, using each type block's own fabric type) ----------
+  function getRemainStockInfo(fabricType, colorRaw){
+    const color = (colorRaw || '').trim();
+    if(!color) return null;
+    const stock = computeStock();
+    const match = stock.find(s => s.fabricType === fabricType && normColor(s.color) === normColor(color));
+    if(!match) return null;
+    return { rolls: match.rolls.map(r => r.value), remaining: match.remaining };
+  }
+
+  function updateRemainDisplay(scopeId){
+    const block = document.getElementById('colorBlock' + scopeId);
+    if(!block) return;
+    const colorInput = block.querySelector('.cb-color');
+    const remainInput = block.querySelector('.cb-remain');
+    if(!colorInput || !remainInput) return;
+    const typeId = String(scopeId).split('_')[0];
+    const typeBlock = document.getElementById('typeBlock' + typeId);
+    const fabricTypeSelect = typeBlock ? typeBlock.querySelector('.tb-fabric-type') : null;
+    const fabricType = fabricTypeSelect ? fabricTypeSelect.value : '';
+    const info = getRemainStockInfo(fabricType, colorInput.value);
+    if(!info || info.rolls.length === 0){
+      remainInput.value = '-';
+    } else {
+      remainInput.value = info.rolls.map(v => fmtYards(v)).join(', ');
+    }
+  }
+
+  function updateAllRemainDisplaysForType(typeId){
+    const typeBlock = document.getElementById('typeBlock' + typeId);
+    if(!typeBlock) return;
+    typeBlock.querySelectorAll('.color-block').forEach(block => {
+      updateRemainDisplay(block.id.replace('colorBlock',''));
+    });
+  }
+
+  function updateAllRemainDisplays(){
+    document.querySelectorAll('.color-block').forEach(block => {
+      updateRemainDisplay(block.id.replace('colorBlock',''));
+    });
+  }
+
+  // ---------- manual stock: color rows, yards columns ----------
+  let stockRowCount = 0;
+  const stockColCounters = {};
+
+  function addStockRow(){
+    stockRowCount++;
+    const rowId = stockRowCount;
+    stockColCounters[rowId] = 0;
+    const row = document.createElement('div');
+    row.className = 'stock-row';
+    row.id = 'stockRow' + rowId;
+    row.innerHTML = `
+      <input type="text" class="stock-color-input" placeholder="Color COLOR #" oninput="recalcStockTotals()">
+      <div class="stock-yds-list" id="stockYdsList${rowId}"></div>
+      <button type="button" class="btn-add-col" onclick="addStockYdsCol(${rowId})">+ Column</button>
+      <div class="stock-row-total num" id="stockRowTotal${rowId}">0</div>
+      <button type="button" class="stock-row-remove" onclick="removeStockRow(${rowId})" title="Remove this row">✕</button>
+    `;
+    document.getElementById('manualStockRows').appendChild(row);
+    addStockYdsCol(rowId);
+  }
+
+  function addStockYdsCol(rowId){
+    stockColCounters[rowId] = (stockColCounters[rowId] || 0) + 1;
+    const colId = stockColCounters[rowId];
+    const wrap = document.createElement('div');
+    wrap.className = 'stock-yds-col';
+    wrap.id = `stockCol${rowId}_${colId}`;
+    wrap.innerHTML = `
+      <input type="number" min="0" step="0.01" class="stock-yds-input" placeholder="0.0" oninput="recalcStockTotals()">
+      <button type="button" class="stock-col-remove" onclick="removeStockYdsCol(${rowId}, ${colId})" title="Remove this column">✕</button>
+    `;
+    document.getElementById('stockYdsList' + rowId).appendChild(wrap);
+    recalcStockTotals();
+  }
+
+  function removeStockYdsCol(rowId, colId){
+    const list = document.getElementById('stockYdsList' + rowId);
+    if(!list || list.querySelectorAll('.stock-yds-col').length <= 1) return;
+    const el = document.getElementById(`stockCol${rowId}_${colId}`);
+    if(el) el.remove();
+    recalcStockTotals();
+  }
+
+  function removeStockRow(rowId){
+    const el = document.getElementById('stockRow' + rowId);
+    if(el) el.remove();
+    delete stockColCounters[rowId];
+    recalcStockTotals();
+  }
+
+  function recalcStockTotals(){
+    let grand = 0;
+    document.querySelectorAll('.stock-row').forEach(row => {
+      const inputs = row.querySelectorAll('.stock-yds-input');
+      const rowTotal = [...inputs].reduce((sum, inp) => sum + (parseFloat(inp.value) || 0), 0);
+      const totalEl = row.querySelector('.stock-row-total');
+      if(totalEl) totalEl.textContent = fmtYards(rowTotal);
+      grand += rowTotal;
+    });
+    const grandEl = document.getElementById('grandTotalYds');
+    if(grandEl) grandEl.textContent = fmtYards(grand);
+  }
+
+  addStockRow();
+
+  function resetManualStockRows(){
+    document.getElementById('manualStockRows').innerHTML = '';
+    stockRowCount = 0;
+    Object.keys(stockColCounters).forEach(k => delete stockColCounters[k]);
+    addStockRow();
+  }
+
+  function saveManualStock(){
+    const errBox = document.getElementById('stockAddError');
+    const fabricType = document.getElementById('stockFabricType').value.trim();
+    const rows = document.querySelectorAll('.stock-row');
+    const newEntries = [];
+
+    if(!fabricType){
+      errBox.textContent = 'Please enter a fabric type before saving';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    rows.forEach(row => {
+      const color = row.querySelector('.stock-color-input').value.trim();
+      const yardVals = [...row.querySelectorAll('.stock-yds-input')]
+        .map(i => parseFloat(i.value) || 0)
+        .filter(v => v > 0);
+      const total = yardVals.reduce((a,b) => a+b, 0);
+      if(color && total > 0){
+        newEntries.push({
+          id: stockEntryIdCounter++,
+          fabricType,
+          color,
+          yards: yardVals,
+          totalYards: total,
+          dateAdded: todayISO(),
+          recordedAt: new Date().toISOString()
+        });
+      }
+    });
+
+    if(newEntries.length === 0){
+      errBox.textContent = 'Please enter Color (COLOR #) and yards for at least 1 row before saving';
+      errBox.style.display = 'block';
+      return;
+    }
+    errBox.style.display = 'none';
+
+    stockEntries.push(...newEntries);
+    saveData();
+    resetManualStockRows();
+    renderAll();
+  }
+
+  // ---------- import stock from Excel (.xlsx) ----------
+  // Convert a value written as "17x30" or "17 x 30" into the total yards for that entry (17 rolls x 30 yards = 510)
+  function parseYardCell(raw){
+    if(raw === null || raw === undefined || raw === '') return null;
+    if(typeof raw === 'number') return raw > 0 ? raw : null;
+    const str = String(raw).trim();
+    const multMatch = str.match(/^(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)$/);
+    if(multMatch){
+      const v = parseFloat(multMatch[1]) * parseFloat(multMatch[2]);
+      return v > 0 ? v : null;
+    }
+    const num = parseFloat(str);
+    return (!isNaN(num) && num > 0) ? num : null;
+  }
+
+  function importStockExcel(){
+    const fileInput = document.getElementById('stockExcelFile');
+    const fabricType = document.getElementById('importFabricType').value.trim();
+    const resultBox = document.getElementById('stockImportResult');
+    const file = fileInput.files && fileInput.files[0];
+
+    resultBox.className = '';
+    if(!fabricType){
+      resultBox.textContent = 'Please enter the fabric type for this file first';
+      resultBox.className = 'error';
+      return;
+    }
+    if(!file){
+      resultBox.textContent = 'Please select an Excel file first';
+      resultBox.className = 'error';
+      return;
+    }
+    if(typeof XLSX === 'undefined'){
+      resultBox.textContent = 'Failed to load the Excel reader. Please try again or check your internet connection';
+      resultBox.className = 'error';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null, raw:true});
+
+        // Find the header row: a column starting with "color" and a "yards" column in the same row
+        let headerRowIdx = -1, colorColIdx = -1, totalColIdx = -1;
+        for(let r = 0; r < Math.min(rows.length, 15); r++){
+          const row = rows[r] || [];
+          const cIdx = row.findIndex(c => typeof c === 'string' && /color/i.test(c));
+          const yIdx = row.findIndex(c => typeof c === 'string' && /yards|yds/i.test(c));
+          if(cIdx !== -1 && yIdx !== -1){
+            headerRowIdx = r;
+            colorColIdx = cIdx;
+            const tIdx = row.findIndex(c => typeof c === 'string' && /total/i.test(c));
+            totalColIdx = tIdx !== -1 ? tIdx : row.length;
+            break;
+          }
+        }
+        if(headerRowIdx === -1){
+          resultBox.textContent = 'Could not find a header row with "Color No" and "Yards" columns in this file. Please check the file format';
+          resultBox.className = 'error';
+          return;
+        }
+
+        const newEntries = [];
+        for(let r = headerRowIdx + 1; r < rows.length; r++){
+          const row = rows[r] || [];
+          const colorRaw = row[colorColIdx];
+          if(colorRaw === null || colorRaw === undefined || colorRaw === '') continue;
+          const colorStr = String(colorRaw).trim();
+          if(/^total$/i.test(colorStr)) continue;
+
+          const yards = [];
+          for(let c = colorColIdx + 1; c < totalColIdx; c++){
+            const v = parseYardCell(row[c]);
+            if(v !== null) yards.push(v);
+          }
+          if(yards.length === 0) continue;
+
+          newEntries.push({
+            id: stockEntryIdCounter++,
+            fabricType,
+            color: colorStr,
+            yards,
+            totalYards: yards.reduce((a,b) => a+b, 0),
+            dateAdded: todayISO(),
+            recordedAt: new Date().toISOString()
+          });
+        }
+
+        if(newEntries.length === 0){
+          resultBox.textContent = 'File read successfully, but no importable color rows were found. Please check the file format';
+          resultBox.className = 'error';
+          return;
+        }
+
+        stockEntries.push(...newEntries);
+        saveData();
+        const grandYards = newEntries.reduce((s,e) => s + e.totalYards, 0);
+        resultBox.textContent = `Import successful: ${newEntries.length} colors, ${fmtYards(grandYards)} yards total (Fabric type: ${fabricType})`;
+        resultBox.className = 'success';
+        fileInput.value = '';
+        renderAll();
+      }catch(err){
+        console.error(err);
+        resultBox.textContent = 'An error occurred while reading the file. Please check that it is a valid, undamaged .xlsx file';
+        resultBox.className = 'error';
+      }
+    };
+    reader.onerror = function(){
+      resultBox.textContent = 'Failed to read the file';
+      resultBox.className = 'error';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function deleteStockEntry(id){
+    stockEntries = stockEntries.filter(e => e.id !== id);
+    saveData();
+    renderAll();
+  }
+
+  // Remove a single yard (YDS) entry from stock — used by the ✕ button in the Stock table (YDS column)
+  function deleteStockRoll(entryId, rollIndex){
+    const entry = stockEntries.find(e => e.id === entryId);
+    if(!entry || !entry.yards) return;
+    if(!confirm('Remove ' + fmtYards(entry.yards[rollIndex]) + ' yards from stock color ' + entry.color + '?')) return;
+
+    entry.yards.splice(rollIndex, 1);
+    if(entry.yards.length === 0){
+      // If the last yard entry is removed, delete this whole row too
+      stockEntries = stockEntries.filter(e => e.id !== entryId);
+    } else {
+      entry.totalYards = entry.yards.reduce((a,b) => a+b, 0);
+    }
+    saveData();
+    renderAll();
+  }
+
+  function renderStockHistory(){
+    const tbody = document.getElementById('stockHistoryTbody');
+    const table = document.getElementById('stockHistoryTable');
+    const empty = document.getElementById('stockHistoryEmpty');
+    if(!tbody) return;
+
+    if(stockEntries.length === 0){
+      table.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    table.style.display = 'table';
+    empty.style.display = 'none';
+
+    const sorted = [...stockEntries].sort((a,b) => b.dateAdded.localeCompare(a.dateAdded) || b.id - a.id);
+    tbody.innerHTML = sorted.map(e => {
+      const yardsHtml = (e.yards && e.yards.length)
+        ? e.yards.map((y,i) => `<span class="roll-chip">${i+1}: ${fmtYards(y)} yd</span>`).join('')
+        : '-';
+      const fabricCell = e.fabricType
+        ? `<span class="badge ${fabricBadgeClass(e.fabricType)}">${escapeHtml(e.fabricType)}</span>`
+        : `<span style="color:var(--ink-soft);">-</span>`;
+      return `
+      <tr>
+        <td>${fabricCell}</td>
+        <td style="font-weight:500;">${escapeHtml(e.color)}</td>
+        <td>${yardsHtml}</td>
+        <td class="right num" style="font-weight:600;">${fmtYards(e.totalYards)}</td>
+        <td style="color:var(--ink-soft);">${fmtDateTh(e.dateAdded)}</td>
+        <td><button class="btn danger" onclick="deleteStockEntry(${e.id})">Delete</button></td>
+      </tr>
+    `;
+    }).join('');
+  }
+
+  // ---------- invoice CRUD ----------
+  function addInvoice(){
+    const invoiceNo = document.getElementById('inInvoiceNo').value.trim();
+    const date = document.getElementById('inDate').value;
+    const customer = document.getElementById('inCustomer').value.trim();
+    const address = document.getElementById('inAddress').value.trim();
+    const paymentTerms = document.getElementById('inPaymentTerms').value.trim();
+    const postDated = document.getElementById('inPostDated').value.trim();
+    const fileInput = document.getElementById('inFile');
+    const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+    const errBox = document.getElementById('formError');
+
+    if(!invoiceNo || !date){
+      errBox.textContent = 'Please enter the invoice number and date';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    const typeBlocks = getTypeBlocksData();
+    const items = [];
+    for(const tb of typeBlocks){
+      for(const b of tb.colors){
+        const isEmpty = !b.color && b.qty <= 0 && (isNaN(b.price) || b.price === 0);
+        if(isEmpty) continue;
+        if(!b.color || b.qty <= 0 || isNaN(b.price) || b.price < 0){
+          errBox.textContent = 'Please complete every color block: Color (COL #), at least 1 roll of yards (>0), and price per yard';
+          errBox.style.display = 'block';
+          return;
+        }
+        items.push({ fabricType: tb.fabricType, color: b.color, price: b.price, yards: b.yards, qty: b.qty, total: b.qty * b.price });
+      }
+    }
+    if(items.length === 0){
+      errBox.textContent = 'Please enter at least 1 color (COL #, yards, price per yard)';
+      errBox.style.display = 'block';
+      return;
+    }
+    errBox.style.display = 'none';
+
+    const qty = items.reduce((s,it) => s + it.qty, 0);
+    const total = items.reduce((s,it) => s + it.total, 0);
+
+    invoices.push({
+      id: idCounter++,
+      invoiceNo, date, customer, address, paymentTerms, postDated,
+      items, qty, total,
+      fileName: file ? file.name : null,
+      fileUrl: file ? URL.createObjectURL(file) : null,
+      recordedAt: new Date().toISOString()
+    });
+
+    document.getElementById('inInvoiceNo').value = '';
+    document.getElementById('inCustomer').value = '';
+    document.getElementById('inAddress').value = '';
+    document.getElementById('inPaymentTerms').value = '';
+    document.getElementById('inPostDated').value = '';
+    document.getElementById('inDate').value = todayISO();
+    fileInput.value = '';
+    resetTypeBlocks();
+
+    saveData();
+    renderAll();
+  }
+
+  function deleteInvoice(id){
+    invoices = invoices.filter(inv => inv.id !== id);
+    saveData();
+    renderAll();
+  }
+
+  // Remove a single color (line item) from an invoice — if only one color remains, delete the whole invoice instead
+  function deleteInvoiceItem(invoiceId, itemIndex){
+    const inv = invoices.find(i => i.id === invoiceId);
+    if(!inv || !inv.items) return;
+    if(inv.items.length <= 1){ deleteInvoice(invoiceId); return; }
+    if(!confirm('Remove color ' + inv.items[itemIndex].color + ' from invoice ' + inv.invoiceNo + '?')) return;
+    inv.items.splice(itemIndex, 1);
+    inv.qty = inv.items.reduce((s,it) => s + it.qty, 0);
+    inv.total = inv.items.reduce((s,it) => s + it.total, 0);
+    saveData();
+    renderAll();
+  }
+
+  // Remove a single deducted yard (roll) from an invoice — used by the small delete button in the Stock table (Out column)
+  function deleteInvoiceRoll(invoiceId, itemIndex, rollIndex){
+    const inv = invoices.find(i => i.id === invoiceId);
+    if(!inv || !inv.items || !inv.items[itemIndex]) return;
+    const item = inv.items[itemIndex];
+    if(!confirm('Remove ' + fmtYards(item.yards[rollIndex]) + ' yards from invoice ' + inv.invoiceNo + ' (color ' + item.color + ')?')) return;
+
+    item.yards.splice(rollIndex, 1);
+    if(item.yards.length === 0){
+      inv.items.splice(itemIndex, 1);
+    } else {
+      item.qty = item.yards.reduce((a,b) => a+b, 0);
+      item.total = item.qty * item.price;
+    }
+    if(inv.items.length === 0){
+      invoices = invoices.filter(i => i.id !== invoiceId);
+    } else {
+      inv.qty = inv.items.reduce((s,it) => s + it.qty, 0);
+      inv.total = inv.items.reduce((s,it) => s + it.total, 0);
+    }
+    saveData();
+    renderAll();
+  }
+
+  // ---------- rendering: invoice table ----------
+  function renderInvoiceTable(){
+    const tbody = document.getElementById('invoiceTbody');
+    const empty = document.getElementById('invoiceEmpty');
+    const table = document.getElementById('invoiceTable');
+
+    if(invoices.length === 0){
+      table.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+    table.style.display = 'table';
+    empty.style.display = 'none';
+
+    const sorted = [...invoices].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+    let rowsHtml = '';
+    sorted.forEach((inv, invIdx) => {
+      const items = inv.items && inv.items.length ? inv.items : [];
+      const rowspan = items.length;
+      items.forEach((item, itemIdx) => {
+        const groupStartClass = (itemIdx === 0 && invIdx > 0) ? ' class="group-start"' : '';
+        rowsHtml += `<tr${groupStartClass}>`;
+        if(itemIdx === 0){
+          rowsHtml += `
+            <td class="num" rowspan="${rowspan}">${escapeHtml(inv.invoiceNo)}</td>
+            <td rowspan="${rowspan}">${fmtDateTh(inv.date)}</td>
+            <td rowspan="${rowspan}" style="color:var(--ink-soft);">${escapeHtml(inv.customer) || '-'}</td>
+          `;
+        }
+        rowsHtml += `
+            <td><span class="badge ${fabricBadgeClass(item.fabricType)}">${escapeHtml(item.fabricType)}</span></td>
+            <td>${escapeHtml(item.color)}</td>
+            <td class="right num">${fmtYards(item.qty)}</td>
+            <td class="right num">${fmtMoney(item.price)}</td>
+            <td class="right num" style="font-weight:600;">${fmtMoney(item.total)}</td>
+            <td style="white-space:nowrap;">
+              ${items.length > 1 ? `<button class="btn danger" style="margin-right:4px;" onclick="deleteInvoiceItem(${inv.id}, ${itemIdx})">✕ Remove Color</button>` : ''}
+              ${itemIdx === 0 ? `<button class="btn danger" onclick="deleteInvoice(${inv.id})">Delete Invoice</button>` : ''}
+            </td>
+        `;
+        rowsHtml += `</tr>`;
+      });
+    });
+    tbody.innerHTML = rowsHtml;
+  }
+
+  // ---------- stock ----------
+  // Match "Fabric Type + Color (COLOR #)" in Stock with "Fabric Type + Color (COL #)" in Invoice to calculate the remaining balance
+  // Remaining = yards added to stock (Stock tab) - yards deducted (Invoice tab), matched by the same fabric type + color
+  let stockViewFilter = 'all'; // 'all' or a fabric type name — used to filter which stock table(s) to display
+
+  function setStockViewFilter(type){
+    stockViewFilter = type;
+    renderStockTable();
+  }
+
+  function escapeAttr(str){
+    return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  }
+
+  // The actual list of fabric types — sourced only from Stock tab data (the primary reference)
+  function getKnownFabricTypes(){
+    const set = new Set();
+    stockEntries.forEach(e => { if(e.fabricType) set.add(e.fabricType); });
+    const known = FABRIC_TYPES_ORDER.filter(t => set.has(t));
+    const extra = [...set].filter(t => !FABRIC_TYPES_ORDER.includes(t)).sort((a,b) => a.localeCompare(b, 'en'));
+    return [...known, ...extra];
+  }
+
+  // Fill (or refresh) one fabric-type <select>, keeping its current value if still valid
+  function populateFabricTypeSelect(selectEl, effectiveTypesParam){
+    if(!selectEl) return;
+    const effectiveTypes = effectiveTypesParam || (getKnownFabricTypes().length ? getKnownFabricTypes() : ['MILTON']);
+    const current = selectEl.value;
+    selectEl.innerHTML = effectiveTypes.map(t => `<option value="${escapeAttr(t)}">${escapeHtml(t)}</option>`).join('');
+    selectEl.value = effectiveTypes.includes(current) ? current : effectiveTypes[0];
+  }
+
+  // Refresh the fabric type list everywhere it can be selected, to match what actually exists in the Stock tab
+  function refreshFabricTypeLists(){
+    const types = getKnownFabricTypes();
+    const effectiveTypes = types.length ? types : ['MILTON'];
+
+    // Datalist for the free-text fabric type inputs in the Stock tab (suggests existing names, but a new one can still be typed)
+    const dl = document.getElementById('fabricTypeList');
+    if(dl){
+      dl.innerHTML = effectiveTypes.map(t => `<option value="${escapeAttr(t)}">`).join('');
+    }
+
+    // Fabric type select inside every Type block in the Invoice tab — sourced from the Stock tab
+    document.querySelectorAll('.tb-fabric-type').forEach(sel => populateFabricTypeSelect(sel, effectiveTypes));
+
+    // Keep the fabric type filter in the Documents tab in sync with the current list too
+    const docSelect = document.getElementById('docTypeFilter');
+    if(docSelect){
+      const current = docSelect.value;
+      docSelect.innerHTML = '<option value="">All Fabric Types</option>' +
+        effectiveTypes.map(t => `<option value="${escapeAttr(t)}">${escapeHtml(t)}</option>`).join('');
+      docSelect.value = (current && effectiveTypes.includes(current)) ? current : '';
+    }
+  }
+
+  function normColor(c){
+    return (c || '').trim().toUpperCase();
+  }
+
+  function computeStock(){
+    const map = {};
+
+    function ensure(fabricTypeRaw, colorRaw){
+      const color = (colorRaw || '').trim();
+      if(!color) return null;
+      const fabricType = fabricTypeRaw || 'Other';
+      const key = fabricType + '||' + normColor(color);
+      if(!map[key]){
+        map[key] = {
+          fabricType,
+          color,
+          rolls: [],     // Individual yard entries added to stock (kept separate)
+          outRolls: [],  // Individual yard entries deducted (from Invoice), each referencing its invoice
+          stockIn: 0,
+          stockOut: 0,
+          lastDate: null
+        };
+      }
+      return map[key];
+    }
+
+    // Yards in stock, from manual stock history (Stock tab) — kept per-entry so each yard entry can be deleted individually
+    stockEntries.forEach(e => {
+      const s = ensure(e.fabricType, e.color);
+      if(!s) return;
+      (e.yards || []).forEach((y, idx) => {
+        s.rolls.push({ value: y, entryId: e.id, rollIndex: idx });
+      });
+      s.stockIn += e.totalYards;
+      if(!s.lastDate || e.dateAdded > s.lastDate) s.lastDate = e.dateAdded;
+    });
+
+    // Yards deducted from stock, from invoices (Invoice tab) matching the same fabric type + color — kept per-entry with a reference to the invoice and item
+    invoices.forEach(inv => {
+      (inv.items || []).forEach((item, itemIdx) => {
+        const s = ensure(item.fabricType, item.color);
+        if(!s) return;
+        (item.yards || []).forEach((y, rollIdx) => {
+          s.outRolls.push({ value: y, invoiceId: inv.id, itemIndex: itemIdx, rollIndex: rollIdx, invoiceNo: inv.invoiceNo });
+        });
+        s.stockOut += item.qty;
+        if(!s.lastDate || inv.date > s.lastDate) s.lastDate = inv.date;
+      });
+    });
+
+    return Object.values(map).map(s => ({
+      ...s,
+      remaining: s.stockIn - s.stockOut
+    })).sort((a,b) =>
+      FABRIC_TYPES_ORDER.indexOf(a.fabricType) - FABRIC_TYPES_ORDER.indexOf(b.fabricType) ||
+      a.color.localeCompare(b.color, 'en', {numeric:true})
+    );
+  }
+
+  function statusBadgeFor(remaining){
+    if(remaining <= 0) return `<span class="badge out">Out of Stock</span>`;
+    if(remaining < LOW_STOCK_THRESHOLD) return `<span class="badge low">Low Stock</span>`;
+    return `<span class="badge ok">Normal</span>`;
+  }
+
+  function renderFabricStockTable(fabricType, rows){
+    const maxRolls = Math.max(1, ...rows.map(r => r.rolls.length));
+    const maxOutRolls = Math.max(1, ...rows.map(r => r.outRolls.length));
+    const ydsHeaders = Array.from({length:maxRolls}, (_,i) => `<th class="right">YDS ${i+1}</th>`).join('');
+    const outHeaders = Array.from({length:maxOutRolls}, (_,i) => `<th class="right">Out ${i+1}</th>`).join('');
+
+    const bodyRows = rows.map((r, idx) => {
+      const ydsCells = Array.from({length:maxRolls}, (_,i) => {
+        const roll = r.rolls[i];
+        if(!roll) return `<td class="right num"><span style="color:var(--line);">-</span></td>`;
+        return `<td class="right num">
+          <span class="roll-val-cell">${fmtYards(roll.value)}<button class="stock-roll-del" onclick="deleteStockRoll(${roll.entryId}, ${roll.rollIndex})" title="Remove this yard entry (color ${escapeAttr(r.color)})">✕</button></span>
+        </td>`;
+      }).join('');
+
+      const outCells = Array.from({length:maxOutRolls}, (_,i) => {
+        const roll = r.outRolls[i];
+        if(!roll) return `<td class="right num"><span style="color:var(--line);">-</span></td>`;
+        return `<td class="right num">
+          <span class="roll-val-cell">${fmtYards(roll.value)}<button class="stock-roll-del" onclick="deleteInvoiceRoll(${roll.invoiceId}, ${roll.itemIndex}, ${roll.rollIndex})" title="Remove this yard entry (invoice ${escapeAttr(roll.invoiceNo)})">✕</button></span>
+        </td>`;
+      }).join('');
+
+      const remColor = r.remaining < 0 ? 'color:var(--coral);' : '';
+      return `
+        <tr>
+          <td class="num">${idx+1}</td>
+          <td style="font-weight:500;">${escapeHtml(r.color)}</td>
+          ${ydsCells}
+          <td class="right num" style="font-weight:600;">${fmtYards(r.stockIn)}</td>
+          ${outCells}
+          <td class="right num" style="font-weight:600;">${fmtYards(r.stockOut)}</td>
+          <td class="right num" style="font-weight:700;font-size:14px;${remColor}">${fmtYards(r.remaining)}</td>
+          <td>${statusBadgeFor(r.remaining)}</td>
+          <td style="color:var(--ink-soft);">${fmtDateTh(r.lastDate)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const typeStockIn = rows.reduce((sum,r) => sum + r.stockIn, 0);
+    const typeStockOut = rows.reduce((sum,r) => sum + r.stockOut, 0);
+    const typeRemaining = rows.reduce((sum,r) => sum + r.remaining, 0);
+
+    return `
+      <h3 class="sub-title" style="display:flex;align-items:center;gap:8px;margin-top:26px;">
+        <span class="badge ${fabricBadgeClass(fabricType)}">${escapeHtml(fabricType)}</span>
+        <span>STOCK UPDATED LIST</span>
+      </h3>
+      <div style="overflow-x:auto;">
+        <table style="margin-top:8px;">
+          <thead>
+            <tr>
+              <th>NO</th>
+              <th>Color (COLOR #)</th>
+              ${ydsHeaders}
+              <th class="right">TOTAL In</th>
+              ${outHeaders}
+              <th class="right">Total Out</th>
+              <th class="right">Remaining</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+            </tr>
+          </thead>
+          <tbody>${bodyRows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="${2 + maxRolls}" style="text-align:right;font-weight:700;padding:11px 10px;border-top:2px solid var(--line);">TOTAL</td>
+              <td class="right num" style="font-weight:700;padding:11px 10px;border-top:2px solid var(--line);">${fmtYards(typeStockIn)}</td>
+              <td colspan="${maxOutRolls}" style="border-top:2px solid var(--line);"></td>
+              <td class="right num" style="font-weight:700;padding:11px 10px;border-top:2px solid var(--line);">${fmtYards(typeStockOut)}</td>
+              <td class="right num" style="font-weight:700;padding:11px 10px;border-top:2px solid var(--line);">${fmtYards(typeRemaining)}</td>
+              <td style="border-top:2px solid var(--line);"></td>
+              <td style="border-top:2px solid var(--line);"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p class="section-sub" style="margin-top:6px;font-size:11.5px;">Click the small ✕ next to a number in the "YDS" column to remove a yard entry added to stock, or in the "Out" column to remove one deducted by an invoice — TOTAL and the remaining balance recalculate instantly.</p>
+    `;
+  }
+
+  function renderStockTable(){
+    const stock = computeStock();
+    const container = document.getElementById('stockByFabricContainer');
+    const empty = document.getElementById('stockEmpty');
+    const remainingBox = document.getElementById('stockRemainingBox');
+    const remainingTotalEl = document.getElementById('stockRemainingTotal');
+    const viewTabs = document.getElementById('stockViewTabs');
+
+    if(stock.length === 0){
+      container.innerHTML = '';
+      if(viewTabs) viewTabs.innerHTML = '';
+      empty.style.display = 'block';
+      if(remainingBox) remainingBox.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    if(remainingBox) remainingBox.style.display = 'flex';
+
+    const groups = {};
+    stock.forEach(s => {
+      if(!groups[s.fabricType]) groups[s.fabricType] = [];
+      groups[s.fabricType].push(s);
+    });
+
+    const orderedTypes = [
+      ...FABRIC_TYPES_ORDER,
+      ...Object.keys(groups).filter(t => !FABRIC_TYPES_ORDER.includes(t))
+    ].filter(t => groups[t] && groups[t].length);
+
+    // Fabric-type view tabs (a List/Tab for browsing each fabric's stock)
+    if(!orderedTypes.includes(stockViewFilter)) stockViewFilter = 'all';
+    if(viewTabs){
+      const chips = ['all', ...orderedTypes];
+      viewTabs.innerHTML = chips.map(t => {
+        const label = t === 'all' ? `All (${orderedTypes.length})` : t;
+        const active = stockViewFilter === t ? ' active' : '';
+        const safeJs = t.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<button type="button" class="stock-view-chip${active}" onclick="setStockViewFilter('${escapeAttr(safeJs)}')">${escapeHtml(label)}</button>`;
+      }).join('');
+    }
+
+    const typesToRender = stockViewFilter === 'all' ? orderedTypes : orderedTypes.filter(t => t === stockViewFilter);
+
+    container.innerHTML = typesToRender
+      .map(t => renderFabricStockTable(t, groups[t]))
+      .join('');
+
+    if(remainingTotalEl){
+      const grandRemaining = stock.reduce((sum, s) => sum + s.remaining, 0);
+      remainingTotalEl.textContent = fmtYards(grandRemaining);
+    }
+  }
+
+  // ---------- summary ----------
+  function renderSummary(){
+    const totalInvoices = invoices.length;
+    const totalYards = invoices.reduce((s,i) => s + i.qty, 0);
+    const totalValue = invoices.reduce((s,i) => s + i.total, 0);
+    const stock = computeStock();
+    const lowCount = stock.filter(s => s.remaining < LOW_STOCK_THRESHOLD && s.remaining > 0).length;
+    const outCount = stock.filter(s => s.remaining <= 0).length;
+    const totalRemaining = stock.reduce((sum, s) => sum + s.remaining, 0);
+
+    document.getElementById('summaryGrid').innerHTML = `
+      <div class="stat-card">
+        <div class="tag">Total Invoices</div>
+        <div class="val">${fmtInt(totalInvoices)}</div>
+        <div class="sub">Records saved</div>
+      </div>
+      <div class="stat-card">
+        <div class="tag">Total Yards Out (Invoice)</div>
+        <div class="val" style="color:var(--teal);">${fmtYards(totalYards)}</div>
+        <div class="sub">Total remaining in stock: ${fmtYards(totalRemaining)} yd</div>
+      </div>
+      <div class="stat-card">
+        <div class="tag">Total Value</div>
+        <div class="val" style="color:var(--navy);">฿${fmtMoney(totalValue)}</div>
+        <div class="sub">All records</div>
+      </div>
+      <div class="stat-card ${outCount>0 ? 'bad' : lowCount>0 ? 'warn' : ''}">
+        <div class="tag">Low/Out of Stock Colors</div>
+        <div class="val">${fmtInt(lowCount + outCount)}</div>
+        <div class="sub">${outCount>0 ? outCount+' colors out of stock' : 'out of '+stock.length+' colors'}</div>
+      </div>
+    `;
+  }
+
+  function renderAll(){
+    refreshFabricTypeLists();
+    renderInvoiceTable();
+    renderStockTable();
+    renderStockHistory();
+    renderSummary();
+    updateAllRemainDisplays();
+    if(document.getElementById('panelDocuments').style.display !== 'none'){
+      renderDocuments();
+    }
+  }
+
+  // ---------- documents archive ----------
+  function clearDocFilters(){
+    document.getElementById('docSearch').value = '';
+    document.getElementById('docTypeFilter').value = '';
+    document.getElementById('docDateFrom').value = '';
+    document.getElementById('docDateTo').value = '';
+    renderDocuments();
+  }
+
+  function renderDocuments(){
+    const q = document.getElementById('docSearch').value.trim().toLowerCase();
+    const typeF = document.getElementById('docTypeFilter').value;
+    const fromF = document.getElementById('docDateFrom').value;
+    const toF = document.getElementById('docDateTo').value;
+
+    let list = [...invoices].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+    if(q){
+      list = list.filter(inv =>
+        inv.invoiceNo.toLowerCase().includes(q) ||
+        (inv.items || []).some(it => it.color.toLowerCase().includes(q)) ||
+        (inv.customer && inv.customer.toLowerCase().includes(q))
+      );
+    }
+    if(typeF) list = list.filter(inv => (inv.items || []).some(it => it.fabricType === typeF));
+    if(fromF) list = list.filter(inv => inv.date >= fromF);
+    if(toF) list = list.filter(inv => inv.date <= toF);
+
+    const grid = document.getElementById('docGrid');
+    const empty = document.getElementById('docEmpty');
+
+    if(list.length === 0){
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    grid.innerHTML = list.map(inv => {
+      const types = [...new Set((inv.items || []).map(it => it.fabricType).filter(Boolean))];
+      const primaryType = types[0] || '';
+      return `
+      <div class="doc-card" onclick="openDocModal(${inv.id})">
+        <div class="file-icon ${fabricBadgeClass(primaryType)}">
+          <div class="body"></div>
+          <div class="fold"></div>
+          <div class="line line1"></div>
+          <div class="line line2"></div>
+        </div>
+        <div class="doc-main">
+          <div class="doc-title">${docFileName(inv)}</div>
+          <div class="doc-sub">
+            ${types.map(t => `<span class="badge ${fabricBadgeClass(t)}">${escapeHtml(t)}</span>`).join('')}
+            <span>Color ${(inv.items || []).map(it => escapeHtml(it.color)).join(', ')}</span>
+            <span>·</span>
+            <span>${fmtDateTh(inv.date)}</span>
+          </div>
+        </div>
+        <div class="doc-right">
+          <div class="doc-total num">฿${fmtMoney(inv.total)}</div>
+          ${inv.fileName ? `<div class="doc-attach">📎 ${escapeHtml(inv.fileName)}</div>` : ''}
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button class="doc-print-btn" onclick="event.stopPropagation(); openInvoiceDoc(${inv.id});" title="View and print invoice">🖶 Print</button>
+            <button class="doc-print-btn" onclick="event.stopPropagation(); downloadInvoiceExcel(${inv.id});" title="Download as Excel file">⬇ .xlsx</button>
+          </div>
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+
+  function openDocModal(id){
+    const inv = invoices.find(i => i.id === id);
+    if(!inv) return;
+    const box = document.getElementById('docModalBox');
+    const itemsHtml = (inv.items || []).map(item => {
+      const rolls = item.yards.map((y,i) => `<span class="roll-chip">Roll ${i+1}: ${fmtYards(y)} yd</span>`).join('');
+      return `
+        <div style="border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+            <span style="font-weight:600;color:var(--navy);display:flex;align-items:center;gap:8px;">
+              <span class="badge ${fabricBadgeClass(item.fabricType)}">${escapeHtml(item.fabricType)}</span>
+              Color ${escapeHtml(item.color)}
+            </span>
+            <span class="num" style="font-weight:600;">฿${fmtMoney(item.total)}</span>
+          </div>
+          <div style="margin-bottom:6px;">${rolls}</div>
+          <div style="font-size:12px;color:var(--ink-soft);">Total ${fmtYards(item.qty)} yd × ฿${fmtMoney(item.price)}/yd</div>
+        </div>
+      `;
+    }).join('');
+    const modalTypes = [...new Set((inv.items || []).map(it => it.fabricType).filter(Boolean))];
+    box.innerHTML = `
+      <button class="modal-close" onclick="closeDocModal()">✕</button>
+      <h3>${docFileName(inv)}</h3>
+      <p class="modal-sub">Invoice No. ${escapeHtml(inv.invoiceNo)} · Recorded on ${fmtDateTh(inv.date)}</p>
+      <div class="modal-grid">
+        <div class="modal-field"><div class="k">Fabric Types</div><div class="v">${modalTypes.map(t => `<span class="badge ${fabricBadgeClass(t)}">${escapeHtml(t)}</span>`).join(' ')}</div></div>
+        <div class="modal-field"><div class="k">Customer Name</div><div class="v">${escapeHtml(inv.customer) || '-'}</div></div>
+      </div>
+      <h3 class="sub-title" style="margin-top:0;">Color Items (${(inv.items || []).length})</h3>
+      ${itemsHtml}
+      <div class="modal-total">
+        <div class="k">Total Invoice Value (${fmtYards(inv.qty)} yd)</div>
+        <div class="v">฿${fmtMoney(inv.total)}</div>
+      </div>
+      ${inv.fileName ? `<div style="margin-top:14px;font-size:13px;">📎 <a href="${inv.fileUrl}" target="_blank" style="color:var(--teal);">${escapeHtml(inv.fileName)}</a></div>` : ''}
+      <div class="modal-actions">
+        <button class="btn secondary" onclick="closeDocModal()">Close</button>
+        <button class="btn" onclick="closeDocModal(); openInvoiceDoc(${inv.id});">🖶 Print Invoice</button>
+        <button class="btn secondary" onclick="downloadInvoiceExcel(${inv.id});">⬇ Download .xlsx</button>
+        <button class="btn danger" style="border-color:var(--coral);" onclick="deleteInvoice(${inv.id}); closeDocModal();">Delete This Invoice</button>
+      </div>
+    `;
+    document.getElementById('docModalOverlay').style.display = 'flex';
+  }
+
+  function closeDocModal(){
+    document.getElementById('docModalOverlay').style.display = 'none';
+  }
+  function closeModalOnOverlay(e){
+    if(e.target.id === 'docModalOverlay') closeDocModal();
+  }
+
+  // ---------- printable invoice document (matches Template_Invoice.xlsx layout) ----------
+  function buildInvoiceDocumentHtml(inv){
+    const items = inv.items || [];
+    const types = [...new Set(items.map(it => it.fabricType).filter(Boolean))];
+    const bodyRows = types.map(type => {
+      const typeRow = `<tr class="inv-doc-fabric-row"><td colspan="5"><span class="inv-doc-fill">${escapeHtml(type)}</span></td></tr>`;
+      const rows = items.filter(it => it.fabricType === type).map(item => `
+        <tr>
+          <td>COLOR # <span class="inv-doc-fill">${escapeHtml(item.color)}</span></td>
+          <td class="right inv-doc-fill">${item.yards.map(y => fmtYards(y)).join(' + ')}</td>
+          <td class="right inv-doc-fill">${fmtYards(item.qty)}</td>
+          <td class="right inv-doc-fill">${fmtMoney(item.price)}</td>
+          <td class="right inv-doc-fill">${fmtMoney(item.total)}</td>
+        </tr>
+      `).join('');
+      return typeRow + rows;
+    }).join('');
+    const totalRolls = items.reduce((s,it) => s + (it.yards ? it.yards.length : 0), 0);
+
+    return `
+      <div class="inv-doc-title">Delivery Note / Invoice / Billing Note</div>
+      <div class="inv-doc-toprow">
+        <div class="inv-doc-customer">
+          <div>Customer: <span class="inv-doc-fill">${escapeHtml(inv.customer) || '-'}</span></div>
+          <div>Address: <span class="inv-doc-fill">${escapeHtml(inv.address) || '-'}</span></div>
+        </div>
+        <div class="inv-doc-meta">
+          <div>Invoice No.: <span class="inv-doc-fill">${escapeHtml(inv.invoiceNo)}</span></div>
+          <div>Date: <span class="inv-doc-fill">${fmtDateSlash(inv.date)}</span></div>
+        </div>
+      </div>
+      <div class="inv-doc-original">ORIGINAL</div>
+      <table class="inv-doc-table">
+        <thead>
+          <tr><th colspan="5">DESCRIPTION OF GOODS</th></tr>
+          <tr>
+            <th>Color (COL #)</th>
+            <th>Yards per Roll</th>
+            <th>Total (Yards)</th>
+            <th>Baht/Yard</th>
+            <th>Amount (Baht)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bodyRows}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>TOTAL =</td>
+            <td class="right inv-doc-fill">${fmtInt(totalRolls)} Rolls</td>
+            <td class="right inv-doc-fill">${fmtYards(inv.qty)}</td>
+            <td>AMOUNT THB</td>
+            <td class="right inv-doc-fill">${fmtMoney(inv.total)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="inv-doc-disclaimer">**GOODS ONCE SOLD CANNOT BE TAKEN BACK OR EXCHANGED**</div>
+      <div class="inv-doc-terms">PAYMENT TERM: ${escapeHtml(inv.paymentTerms) || '30 DAYS'}</div>
+      <div class="inv-doc-cheque">POST DATED${inv.postDated ? ': ' + escapeHtml(inv.postDated) : ''}</div>
+      <div class="inv-doc-bottom">
+        <div class="inv-doc-bank">
+          Bank Details: -<br>
+          Account Name: MR.DEEPAK KEDIA<br>
+          Account No.: 091-1018780<br>
+          Bank: Kasikorn Bank<br>
+          Branch: Ratchawong
+        </div>
+        <div class="inv-doc-signature">RECEIVED BY</div>
+      </div>
+    `;
+  }
+
+  function openInvoiceDoc(invoiceId){
+    const inv = invoices.find(i => i.id === invoiceId);
+    if(!inv) return;
+    currentInvoiceDocId = invoiceId;
+    document.getElementById('invoiceDocContent').innerHTML = buildInvoiceDocumentHtml(inv);
+    document.getElementById('invoiceDocOverlay').style.display = 'flex';
+  }
+  function closeInvoiceDoc(){
+    document.getElementById('invoiceDocOverlay').style.display = 'none';
+  }
+  function closeInvoiceDocOnOverlay(e){
+    if(e.target.id === 'invoiceDocOverlay') closeInvoiceDoc();
+  }
+
+  // ---------- download invoice as editable .xlsx (matches Template_Invoice.xlsx layout) ----------
+  function colLetter(idx){
+    return XLSX.utils.encode_col(idx);
+  }
+
+  function buildInvoiceExcelAOA(inv){
+    const items = inv.items && inv.items.length ? inv.items : [];
+    const maxRolls = Math.max(4, ...items.map(it => (it.yards || []).length), 1);
+    const totalCols = 1 + maxRolls + 3; // A(Color) + yard columns + total + baht/yard + amount
+    const lastColIdx = totalCols - 1;
+    const sumColIdx = 1 + maxRolls;
+    const priceColIdx = sumColIdx + 1;
+    const amountColIdx = priceColIdx + 1;
+
+    const aoa = [];
+    const merges = [];
+    const boldCells = [];   // Cell refs that should be bold (styling is attempted if the reading program supports it)
+    const blueCells = [];   // Cells with actual entered data (shown in blue text if the reading program supports styling)
+    const redCells = [];
+
+    function pushRow(cells){
+      const row = new Array(totalCols).fill(null);
+      (cells || []).forEach((v,i) => { if(i < totalCols) row[i] = v; });
+      aoa.push(row);
+      return aoa.length - 1;
+    }
+    function ref(r,c){ return XLSX.utils.encode_cell({r,c}); }
+    function mergeRange(r, c1, c2){ merges.push({s:{r,c:c1}, e:{r,c:c2}}); }
+
+    // Title row
+    let r = pushRow(['Delivery Note / Invoice / Billing Note']);
+    mergeRange(r, 0, lastColIdx);
+    boldCells.push(ref(r,0));
+
+    // Customer + invoice number
+    r = pushRow([]);
+    aoa[r][0] = 'Customer: ' + (inv.customer || '-');
+    mergeRange(r, 0, sumColIdx - 1);
+    aoa[r][sumColIdx] = 'Invoice No.: ' + (inv.invoiceNo || '-');
+    boldCells.push(ref(r,0)); blueCells.push(ref(r,0)); blueCells.push(ref(r,sumColIdx));
+
+    // Address + date
+    r = pushRow([]);
+    aoa[r][0] = 'Address: ' + (inv.address || '-');
+    mergeRange(r, 0, sumColIdx - 1);
+    aoa[r][priceColIdx] = 'Date: ' + fmtDateSlash(inv.date);
+    mergeRange(r, priceColIdx, amountColIdx);
+    blueCells.push(ref(r,0)); blueCells.push(ref(r,priceColIdx));
+
+    // Blank spacer row
+    pushRow([]);
+
+    // ORIGINAL (top-right corner)
+    r = pushRow([]);
+    aoa[r][lastColIdx] = 'ORIGINAL';
+    redCells.push(ref(r, lastColIdx));
+
+    // Item table header
+    r = pushRow([]);
+    aoa[r][0] = 'Color (COLOR #)';
+    for(let i = 0; i < maxRolls; i++) aoa[r][1+i] = 'Roll ' + (i+1);
+    aoa[r][sumColIdx] = 'Total (Yards)';
+    aoa[r][priceColIdx] = 'Baht/Yard';
+    aoa[r][amountColIdx] = 'Amount (Baht)';
+    for(let c = 0; c <= lastColIdx; c++) boldCells.push(ref(r,c));
+    const headerRowIdx = r;
+
+    // Fabric type rows + item rows, grouped by fabric type (an invoice can have more than one type)
+    const itemSumRefs = [];
+    const itemAmountRefs = [];
+    let totalRolls = 0;
+    const types = [...new Set(items.map(it => it.fabricType).filter(Boolean))];
+    types.forEach(type => {
+      r = pushRow([]);
+      aoa[r][0] = type;
+      mergeRange(r, 0, lastColIdx);
+      boldCells.push(ref(r,0)); blueCells.push(ref(r,0));
+
+      items.filter(it => it.fabricType === type).forEach(item => {
+        r = pushRow([]);
+        const excelRow = r; // 0-based, used directly with XLSX.utils.encode_cell
+        aoa[r][0] = 'COLOR # ' + item.color;
+        blueCells.push(ref(r,0));
+        (item.yards || []).forEach((y, i) => {
+          aoa[r][1+i] = y;
+          blueCells.push(ref(r, 1+i));
+        });
+        totalRolls += (item.yards || []).length;
+        const firstYardRef = ref(excelRow, 1);
+        const lastYardRef = ref(excelRow, maxRolls);
+        aoa[r][sumColIdx] = { t:'n', f: `SUM(${firstYardRef}:${lastYardRef})` };
+        aoa[r][priceColIdx] = item.price;
+        blueCells.push(ref(r, priceColIdx));
+        const sumRef = ref(excelRow, sumColIdx);
+        const priceRef = ref(excelRow, priceColIdx);
+        aoa[r][amountColIdx] = { t:'n', f: `${sumRef}*${priceRef}` };
+        itemSumRefs.push(sumRef);
+        itemAmountRefs.push(ref(excelRow, amountColIdx));
+      });
+    });
+
+    // TOTAL row — shows how many rolls (pieces) in total, alongside total yards and amount
+    r = pushRow([]);
+    aoa[r][0] = 'TOTAL =';
+    boldCells.push(ref(r,0));
+    aoa[r][1] = totalRolls + ' Rolls';
+    boldCells.push(ref(r,1));
+    if(maxRolls > 1) mergeRange(r, 1, sumColIdx - 1);
+    if(itemSumRefs.length){
+      aoa[r][sumColIdx] = { t:'n', f: itemSumRefs.join('+') };
+    } else {
+      aoa[r][sumColIdx] = 0;
+    }
+    aoa[r][priceColIdx] = 'AMOUNT THB';
+    if(itemAmountRefs.length){
+      aoa[r][amountColIdx] = { t:'n', f: itemAmountRefs.join('+') };
+    } else {
+      aoa[r][amountColIdx] = 0;
+    }
+    boldCells.push(ref(r,sumColIdx)); boldCells.push(ref(r,priceColIdx)); boldCells.push(ref(r,amountColIdx));
+    blueCells.push(ref(r,sumColIdx)); blueCells.push(ref(r,amountColIdx));
+
+    pushRow([]);
+
+    // Returns/exchange disclaimer
+    r = pushRow(['**GOODS ONCE SOLD CANNOT BE TAKEN BACK OR EXCHANGED**']);
+    mergeRange(r, 0, lastColIdx);
+    redCells.push(ref(r,0)); boldCells.push(ref(r,0));
+
+    // Payment terms
+    r = pushRow(['PAYMENT TERM: ' + (inv.paymentTerms || '30 DAYS')]);
+    mergeRange(r, 0, lastColIdx);
+    boldCells.push(ref(r,0));
+
+    // POST DATED CHEQUE
+    r = pushRow(['POST DATED' + (inv.postDated ? ': ' + inv.postDated : '')]);
+    mergeRange(r, 0, lastColIdx);
+    redCells.push(ref(r,0)); boldCells.push(ref(r,0));
+
+    // Bank details + received-by
+    r = pushRow(['Bank Details: -']);
+    aoa[r][priceColIdx] = 'RECEIVED BY';
+    mergeRange(r, priceColIdx, amountColIdx);
+    boldCells.push(ref(r,0)); boldCells.push(ref(r,priceColIdx));
+
+    pushRow(['Account Name: MR.DEEPAK KEDIA']);
+    pushRow(['Account No.: 091-1018780']);
+    pushRow(['Bank: Kasikorn Bank']);
+    pushRow(['Branch: Ratchawong']);
+
+    return { aoa, merges, boldCells, blueCells, redCells, totalCols, sumColIdx, priceColIdx, amountColIdx, maxRolls, headerRowIdx };
+  }
+
+  function downloadInvoiceExcel(invoiceId){
+    const inv = invoices.find(i => i.id === invoiceId);
+    if(!inv) return;
+    if(typeof XLSX === 'undefined'){
+      alert('Failed to load the Excel writer. Please try again or check your internet connection.');
+      return;
+    }
+    const built = buildInvoiceExcelAOA(inv);
+    const ws = XLSX.utils.aoa_to_sheet(built.aoa);
+    ws['!merges'] = built.merges;
+
+    const colWidths = [{wch:20}];
+    for(let i = 0; i < built.maxRolls; i++) colWidths.push({wch:9});
+    colWidths.push({wch:11}, {wch:10}, {wch:14});
+    ws['!cols'] = colWidths;
+
+    // Attempt basic styling (bold/blue/red) — most Excel programs will render it, though some readers may not support full styling
+    built.boldCells.forEach(cellRef => {
+      if(!ws[cellRef]) return;
+      ws[cellRef].s = Object.assign({}, ws[cellRef].s, { font: Object.assign({}, (ws[cellRef].s||{}).font, {bold:true}) });
+    });
+    built.blueCells.forEach(cellRef => {
+      if(!ws[cellRef]) return;
+      ws[cellRef].s = Object.assign({}, ws[cellRef].s, { font: Object.assign({}, (ws[cellRef].s||{}).font, {color:{rgb:'1A56DB'}}) });
+    });
+    built.redCells.forEach(cellRef => {
+      if(!ws[cellRef]) return;
+      ws[cellRef].s = Object.assign({}, ws[cellRef].s, { font: Object.assign({}, (ws[cellRef].s||{}).font, {color:{rgb:'CC0000'}, bold:true}) });
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Invoice');
+    const safeName = (inv.invoiceNo || 'invoice').replace(/[^a-zA-Z0-9_-]+/g, '_');
+    XLSX.writeFile(wb, `Invoice_${safeName}.xlsx`, {cellStyles:true});
+  }
+
+  renderAll();
+</script>
+
+</body>
+</html>
