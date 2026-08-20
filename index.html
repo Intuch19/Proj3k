@@ -848,7 +848,7 @@
     return false;
   }
 
-  async function saveData(){
+  async function saveDataImmediate(){
     // fileUrl is a temporary blob URL valid only for this session, so it is not persisted
     const invoicesToSave = invoices.map(inv => ({...inv, fileUrl: null}));
     const payload = JSON.stringify({ invoices: invoicesToSave, stockEntries });
@@ -859,6 +859,15 @@
       showSaveErrorBanner();
     }
     return ok;
+  }
+
+  // Saves are queued (never run concurrently). Without this, if two saves overlap — e.g. adding
+  // several stock rows quickly while one save is still retrying in the background — an older save
+  // can finish after a newer one and silently overwrite it with stale data, losing the latest entry.
+  let saveQueue = Promise.resolve(true);
+  function saveData(){
+    saveQueue = saveQueue.then(saveDataImmediate, saveDataImmediate);
+    return saveQueue;
   }
 
   // Default seed stock from the attached MILTON STOCK MAY 26 file, used only when no data has been saved yet
@@ -1354,7 +1363,7 @@
     addStockRow();
   }
 
-  function saveManualStock(){
+  async function saveManualStock(){
     const errBox = document.getElementById('stockAddError');
     const fabricType = document.getElementById('stockFabricType').value.trim();
     const rows = document.querySelectorAll('.stock-row');
@@ -1393,9 +1402,14 @@
     errBox.style.display = 'none';
 
     stockEntries.push(...newEntries);
-    saveData();
     resetManualStockRows();
     renderAll();
+
+    const ok = await saveData();
+    if(!ok){
+      errBox.textContent = 'This stock was added on screen, but saving it failed — see the warning banner above. Click Retry there once your connection/storage is working, or your entry may be lost on reload.';
+      errBox.style.display = 'block';
+    }
   }
 
   // ---------- import stock from Excel (.xlsx) ----------
@@ -1437,7 +1451,7 @@
     }
 
     const reader = new FileReader();
-    reader.onload = function(e){
+    reader.onload = async function(e){
       try{
         const data = new Uint8Array(e.target.result);
         const wb = XLSX.read(data, {type:'array'});
@@ -1497,12 +1511,18 @@
         }
 
         stockEntries.push(...newEntries);
-        saveData();
-        const grandYards = newEntries.reduce((s,e) => s + e.totalYards, 0);
-        resultBox.textContent = `Import successful: ${newEntries.length} colors, ${fmtYards(grandYards)} yards total (Fabric type: ${fabricType})`;
-        resultBox.className = 'success';
         fileInput.value = '';
         renderAll();
+
+        const grandYards = newEntries.reduce((s,e) => s + e.totalYards, 0);
+        const ok = await saveData();
+        if(ok){
+          resultBox.textContent = `Import successful: ${newEntries.length} colors, ${fmtYards(grandYards)} yards total (Fabric type: ${fabricType})`;
+          resultBox.className = 'success';
+        } else {
+          resultBox.textContent = `Added ${newEntries.length} colors on screen, but saving failed — see the warning banner above. Click Retry there, or this import may be lost on reload.`;
+          resultBox.className = 'error';
+        }
       }catch(err){
         console.error(err);
         resultBox.textContent = 'An error occurred while reading the file. Please check that it is a valid, undamaged .xlsx file';
